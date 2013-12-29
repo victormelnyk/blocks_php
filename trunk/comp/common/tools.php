@@ -21,10 +21,15 @@ define('INPUT_TYPE_TIME',     'time');
 
 //!functions
 //!common
-function eAssert($aCondition, $aMessage = '')
+function eAssert($aCondition, $aMessage = 'Assert')
 {
   if (!$aCondition)
     throw new Exception($aMessage);
+}
+
+function p($aValue)
+{
+  print($aValue);
 }
 
 function varTypeCheckAssert($aVarType)
@@ -358,28 +363,6 @@ function tagsReplaceArray($aStr, $aTagsValues)
 
   return tagsReplace($aStr, $lTags, $lValues);
 }
-//!templates
-function templateProcess($aTemplate, $aValuesArray)
-{
-  try
-  {
-    $aValuesArray['v'] = $aValuesArray;
-    extract($aValuesArray, EXTR_SKIP);
-    ob_start();
-    eval(' ?>'.$aTemplate.'<?php ');
-    return ob_get_clean();
-  }
-  catch (Exception $e)
-  {
-    ob_get_clean();
-
-    $lFunction = cPage::settingsGet()->onTemplateErrorFunction;//!!cPage
-    if ($lFunction)
-      return $lFunction($e);
-    else
-      return exceptionToString($e);
-  }
-}
 //html
 function inputTypeByVarType($aVarType)
 {
@@ -554,6 +537,11 @@ class cLinearNamedIndexedList extends cNamedIndexedList
 {
   protected $position = -1;
 
+  public function isAllRead()
+  {
+    return $this->position == $this->count() - 1;
+  }
+
   public function nextExist()
   {
     return $this->position + 1 < $this->count();
@@ -575,9 +563,9 @@ class cLinearNamedIndexedList extends cNamedIndexedList
     return true;
   }
 
-  public function isAllRead()
+  public function positionClear()
   {
-    return $this->position == $this->count() - 1;
+    $this->position = -1;
   }
 }
 
@@ -652,6 +640,15 @@ class cNameValueLinearNamedIndexedList extends cLinearNamedIndexedList
   public function addNameValueObject(cNameValueObject $aObject)
   {
     $this->add($aObject->name, $aObject);
+  }
+
+  public function currDeleteByN($aName)
+  {
+    eAssert($this->position > -1);
+    $lValue = $this->getByI($this->position);
+    eAssert($lValue->name == $aName);
+    $this->delete($aName);
+    $this->position--;
   }
 
   public function nextGetCheckByN($aName, &$aValue)
@@ -771,6 +768,15 @@ class cXmlNode extends cXmlBase
     $this->nodesById = new cNamedList(cNamedList::DUPLICATION_TYPE_NONE);
   }
 
+  public function allReadAsser()
+  {
+    if(!$this->attrs->isAllRead() || !$this->nodes->isAllRead())
+      throw new Exception('Not read xml node:'.CRLF.$this->saveToString());
+
+    for ($i = 0, $l = $this->nodes->count(); $i < $l; $i++)
+      $this->nodes->getByI($i)->allReadAsser();
+  }
+
   private function attrAdd($aAttrName, $aAttrValue)
   {
     return $this->attrs->addNameValueObject(
@@ -791,21 +797,6 @@ class cXmlNode extends cXmlBase
   private function fullNameGet()
   {
     return (($this->id != $this->name) ? '_n-'.$this->id.'-' : '').$this->name;
-  }
-
-  public function isAllRead()
-  {
-    $lResult = true;
-
-    for ($i = 0, $l = $this->nodes->count(); $i < $l; $i++)
-      $lResult = $lResult && $this->nodes->getByI($i)->isAllRead();
-
-    $lResult = $this->attrs->isAllRead() && $this->nodes->isAllRead();
-
-    if (!$lResult)//!!test
-      throw new Exception('Not read xml node:'.CRLF.$this->saveToString());
-
-    return $lResult;
   }
 
   protected function load($aSimpleXmlElement)
