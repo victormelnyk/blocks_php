@@ -18,10 +18,8 @@
 
 class cPageSettings
 {
-  public $cacheDir = '';
   public $db       = null;
   public $rootDir  = '';
-  public $runDir   = '';
 
   public $isCache   = true;
   public $isProfile = false;
@@ -30,10 +28,11 @@ class cPageSettings
   public $onErrorFunction = '';
   public $onTemplateErrorFunction = '';
 
-  public function __construct($aPageParams)
+  public function __construct()
   {
     session_start();
-
+  }
+  /*
     $this->rootDir = arrayValueGetTyped($aPageParams, 'rootDir',
       VAR_TYPE_STRING);
 
@@ -76,6 +75,7 @@ class cPageSettings
         'onTemplateErrorFunction with name: "'.$this->onTemplateErrorFunction.
         '" do not exsist');
   }
+  */
 }
 
 class cCache
@@ -207,6 +207,7 @@ abstract class cMetaData
 
   public $filesByMl = array(); //!! ->LocalizationFiles
   public $tagsMl = Null;
+  public $tags = Null;
 
   public $initScript = '';
   public $workDirs   = array();
@@ -226,6 +227,7 @@ abstract class cMetaData
     $this->styles  = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
 
     $this->tagsMl = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
+    $this->tags   = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
 
     $this->appName  = $aAppName;
     $this->name     = $aName;
@@ -263,24 +265,56 @@ abstract class cMetaData
 
     for ($i = 1, $l = count($this->configXmls); $i < $l; $i++)
       $lXmlDocument->update($this->configXmls[$i]);
-    /*!!check is it ok for all
+
+    $lXmlDocument->nodes->positionClear();
+
+    if ($lXmlDocument->nodes->nextGetCheckByN('Inherited', $lInheritedNode))
+      $lXmlDocument->nodes->currDeleteByN('Inherited');
+
+    if ($lXmlDocument->nodes->nextGetCheckByN('Localization',
+      $lLocalizationNode))
+    {
+      if ($lLocalizationNode->nodes->nextGetCheckByN('FilesByMl',
+        $lFilesByMlNode))
+        while ($lFilesByMlNode->nodes->nextGetCheckByN('F', $lFileByMlNode))
+          $this->filesByMl[$lFileByMlNode->getS()] = true;
+
+      if ($lLocalizationNode->nodes->nextGetCheckByN('Tags', $lTags))
+        while ($lTags->nodes->nextGetCheck($lTag))
+        {
+          while ($lTag->nodes->nextGetCheck($lValueMl))
+          {
+            if (!$this->tagsMl->getCheck($lValueMl->name, $lValuesMl))
+            {
+              $lValuesMl = new cNamedIndexedList(//!! do not create
+                cNamedList::DUPLICATION_TYPE_ERROR);
+              $this->tagsMl->add($lValueMl->name, $lValuesMl);
+            }
+            $lValuesMl->add($lTag->name, $lValueMl->getS());
+          }
+        }
+
+      $lXmlDocument->nodes->currDeleteByN('Localization');
+    }
+
+    if ($lXmlDocument->nodes->nextGetCheckByN('Tags', $lTags))
+    {
+      while ($lTags->nodes->nextGetCheck($lTag))
+        $this->tagsMl->add($lTag->name, $lTag->getS());
+      $lXmlDocument->nodes->currDeleteByN('Tags');
+    }
+
     $lXmlString = $lXmlDocument->saveToString();
     $lXmlString = $this->stringTagsProcess($lXmlString, array());
     $lXmlDocument = new cXmlDocument();
     $lXmlDocument->loadFromString($lXmlString);
-    */
-    $this->configReadInternal($lXmlDocument);
 
-    //!!if (!$lXmlDocument->isAllRead())//!!for test
-    //  throw new Exception('Not read xml:'.$lXmlDocument->saveToString());
+    $this->configReadInternal($lXmlDocument);
+    $lXmlDocument->allReadAsser();
   }
 
   protected function configReadInternal(cXmlDocument $aXmlDocument)
   {
-    if ($aXmlDocument->nodes->nextGetCheckByN('Inherited', $lInheritedNode))
-      while ($lInheritedNode->nodes->nextExist())
-        $lInheritedNode->nodes->nextGet();
-
     if ($aXmlDocument->nodes->nextGetCheckByN('Styles', $lStylesNode))
       while ($lStylesNode->nodes->nextGetCheckByN('Style', $lStyleNode))
       {
@@ -307,30 +341,6 @@ abstract class cMetaData
           $lIsNotCollect));
       }
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('Localization',
-      $LocalizationNode))
-    {
-      if ($LocalizationNode->nodes->nextGetCheckByN('FilesByMl',
-        $lFilesByMlNode))
-        while ($lFilesByMlNode->nodes->nextGetCheckByN('F', $lFileByMlNode))
-          $this->filesByMl[$lFileByMlNode->getS()] = true;
-
-      if ($LocalizationNode->nodes->nextGetCheckByN('Tags', $lTags))
-        while ($lTags->nodes->nextGetCheck($lTag))
-        {
-          while ($lTag->nodes->nextGetCheck($lValueMl))
-          {
-            if (!$this->tagsMl->getCheck($lValueMl->name, $lValuesMl))
-            {
-              $lValuesMl = new cNamedIndexedList(
-                cNamedList::DUPLICATION_TYPE_ERROR);
-              $this->tagsMl->add($lValueMl->name, $lValuesMl);
-            }
-            $lValuesMl->add($lTag->name, $lValueMl->getS());
-          }
-        }
-    }
-
     if ($aXmlDocument->nodes->nextGetCheckByN('InitScripts', $lInitScriptsNode))
       while ($lInitScriptsNode->nodes->nextGetCheckByN('InitScript',
         $lInitScriptNode))
@@ -338,16 +348,13 @@ abstract class cMetaData
 
     if ($aXmlDocument->nodes->nextGetCheckByN('Settings', $lSettingsNode))
     {
-      if (!$lSettingsNode->nodes->count() && !$lSettingsNode->attrs->count())
-        return;//!! test when attrs only exist
-      /*!!check is it ok for all*/
-      $lXmlString = $lSettingsNode->saveToString();
-      $lXmlString = $this->stringTagsProcess($lXmlString, array());
-      $lXmlDocument = new cXmlDocument();
-      $lXmlDocument->loadFromString($lXmlString);
-      $lSettingsNode = $lXmlDocument;
 
+      if (!$lSettingsNode->nodes->count() && !$lSettingsNode->attrs->count())
+        return;
+
+      $this->settingsRead($lSettingsNode);
       $this->settingsXmlNode = $lSettingsNode;
+
     }
   }
 
@@ -441,7 +448,7 @@ abstract class cMetaData
           $lFileName.'_'.$this->page->language;
         $lRelativeFilePaths[] = implode('.', $lFilePathParts);
         $lFilePathParts[$lFilePathPartCount - 1 - 1] =
-          $lFileName.'_'.$this->page->languageDefault;
+          $lFileName.'_'.$this->page->defaultLanguage;
         $lRelativeFilePaths[] = implode('.', $lFilePathParts);
       }
 
@@ -496,6 +503,7 @@ abstract class cMetaData
     {
       $this->settingsXmlNode = new cXmlDocument();
       $this->settingsXmlNode->loadFromString($aCacheData['settingsXml']);
+      $this->settingsRead($this->settingsXmlNode);
     }
   }
 
@@ -514,7 +522,7 @@ abstract class cMetaData
       return $lValue;
     else
     if ($this->localizationTagValueGetCheck($aTagName,
-      $this->page->languageDefault, $lValue))
+      $this->page->defaultLanguage, $lValue))
       return $lValue;
     else
       throw new Exception('Can not get LocalizationTagValue for Tag: "'.
@@ -635,6 +643,11 @@ abstract class cMetaData
         case 'ml':
           $lValues[] = $this->localizationTagValueGet($lTagParam);
           break;
+        case 'tag':
+          $lValues[] = $this->tags->get($lTagParam)->gerS();
+        case 'l':
+          $lValues[] = $this->page->language;
+          break;
         default:
           throw new Exception('Not suported tag: "'.$lTag.'"');
         }
@@ -672,8 +685,8 @@ abstract class cMetaData
   public function workDirBuild($aAppName, $aSetName, $aPageName = '',
     $aBlockName = '')
   {
-    return $this->appDirGet($aAppName).'templates/sets/'.$aSetName.'/'.
-      ($aPageName ? 'pages/'.$aPageName.'/': '').
+    return $this->appDirGet($aAppName).'tpl/'.$aSetName.'/'.
+      ($aPageName ? $aPageName.'/': '').
       ($aBlockName ? $aBlockName.'/': '');
   }
 }
@@ -681,6 +694,9 @@ abstract class cMetaData
 class cSet extends cMetaData
 {
   private $appNames = array();
+
+  public $title = '';
+  public $meta = '';
 
   public $runDirs = array();
 
@@ -696,6 +712,12 @@ class cSet extends cMetaData
   {
     parent::configReadInternal($aXmlDocument);
 
+    if ($aXmlDocument->nodes->nextGetCheckByN('Title', $lTitleNode))
+      $this->title = $lTitleNode->getS();
+
+    if ($aXmlDocument->nodes->nextGetCheckByN('Meta', $lMetaNode))
+      $this->meta = $lMetaNode->getS();
+
     if ($aXmlDocument->nodes->nextGetCheckByN('RunDirs', $lRunDirsNode))
       while ($lRunDirsNode->nodes->nextGetCheck($lRunDirNode))
         $this->runDirs[$lRunDirNode->name] = $lRunDirNode->getS();
@@ -705,7 +727,7 @@ class cSet extends cMetaData
   {
     foreach ($this->appNames as $lAppName)
     {
-      $lFlp = $this->appDirGet($lAppName).'external/'.$aRelativeFlp;
+      $lFlp = $this->appDirGet($lAppName).'ext/'.$aRelativeFlp;
 
       if (file_exists($lFlp))
         return $lFlp;
@@ -742,14 +764,6 @@ class cSet extends cMetaData
       $this->initMtInternal($this->appName.'.'.$this->name);
       $this->initMtInternal('blocks.sys');
       $this->configRead();
-    }
-
-    if (isset($this->settingsXmlNode))
-    {
-      $this->settingsRead($this->settingsXmlNode);
-      if (!$this->cache->isValid && !$this->settingsXmlNode->isAllRead())//!! for test
-        throw new Exception('Not read settingsXmlNode:'.
-          $this->settingsXmlNode->saveToString());
     }
   }
 
@@ -838,13 +852,15 @@ class cPage extends cMetaData
   private $blocksAll   = null;
   private $blocksInfos = array();
 
-  public $languageDefault = 'uk';//!!read from set
+  public $title = '';
+  public $meta = '';
+
+  public $defaultLanguage = '';
   public $language = '';
 
   public $blocks      = array();
   public $params      = null;
   public $set         = null;
-  public $titleSuffix = '';
 
   public function __construct($aSetNameFull)
   {
@@ -854,11 +870,11 @@ class cPage extends cMetaData
     $lPageName = basename($_SERVER['SCRIPT_NAME'], '.php');
     $lSettings = self::settingsGet();
 
-    if (paramPostGetSessionGetCheck('l', VAR_TYPE_STRING, $this->language))
+    if (paramPostGetGetCheck('l', VAR_TYPE_STRING, $this->language))//!!use params logic
       $_SESSION['language'] = $this->language;
     else
     if (!paramSessionGetCheck('language', VAR_TYPE_STRING, $this->language))
-      $this->language = $this->languageDefault;
+      $this->language = $this->defaultLanguage;
 
     $lCache = new cCache($lSettings->rootDir.$lAppName.'/'.
       $lSettings->cacheDir.$lSetName.'/'.$lPageName.'/', $lSettings->isCache);
@@ -883,7 +899,7 @@ class cPage extends cMetaData
     $lLibraryName   = $lNames[1];
     $lComponentName = $lNames[2];
 
-    $lModuleFlp = $lAppName.'/libraries/'.$lLibraryName.'/'.$lComponentName.'/'.
+    $lModuleFlp = $lAppName.'/lib/'.$lLibraryName.'/'.$lComponentName.'/'.
       '.php';
 
     $this->moduleAdd($lModuleFlp);
@@ -932,16 +948,15 @@ class cPage extends cMetaData
     else
     {
       $lResult = $this->fileFirstExistDataGet('.htm', true, array(
-        'meta' => $this->fileFirstExistDataGet('meta.htm'),
-        'title'=> $this->fileFirstExistDataGet('title.txt').
-          ($this->titleSuffix ? ' '.$this->titleSuffix : ''),
+        'meta' => $this->set->meta.$this->meta,
+        'title'=> $this->set->title.$this->title,
         'css'  => $this->buildStyles(),
         'js'   => $this->buildScripts()
       ));
       $this->saveAllToCache();
     }
 
-    return templateProcess($lResult, array(
+    return $this->templateProcess($lResult, array(
       'body'   => $lBody,
       'initJs' => $this->buildInitScripts()
     ));
@@ -1057,6 +1072,16 @@ class cPage extends cMetaData
   {
     parent::configReadInternal($aXmlDocument);
 
+    if ($aXmlDocument->nodes->nextGetCheckByN('Title', $lTitleNode))
+      $this->title = $lTitleNode->getS();
+
+    if ($aXmlDocument->nodes->nextGetCheckByN('Meta', $lMetaNode))
+      $this->meta = $lMetaNode->getS();
+
+    if ($aXmlDocument->nodes->nextGetCheckByN('DefaultLanguage',
+      $lDefaultLanguageNode))
+      $this->defaultLanguage = $lDefaultLanguageNode->getS();
+
     if ($aXmlDocument->nodes->nextGetCheckByN('Blocks', $lBlocksNode))
       while ($lBlocksNode->nodes->nextGetCheck($lBlockNode))
       {
@@ -1105,14 +1130,6 @@ class cPage extends cMetaData
       $this->initMtInternal($this->appName.'.'.$this->set->name.'.'.$this->name);
       $this->initMtInternal('blocks.sys.page');
       $this->configRead();
-    }
-
-    if (isset($this->settingsXmlNode))
-    {
-      $this->settingsRead($this->settingsXmlNode);
-      if (!$this->cache->isValid && !$this->settingsXmlNode->isAllRead())//!! for test
-        throw new Exception('Not read settingsXmlNode:'.
-          $this->settingsXmlNode->saveToString());
     }
 
     $this->blocksAdd();
@@ -1191,7 +1208,7 @@ class cPage extends cMetaData
   public function process()
   {
     if ($this->settings->isTest)
-      $this->initScriptAdd('page.isTestMode = true');
+      $this->initScriptAdd('page = {}; page.isTestMode = true;');//!!
 
     if (paramPostGetGetCheck('blocks', VAR_TYPE_STRING, $lParam))//!!
       $lResult = $this->buildByBlockNames(explode(',', $lParam));
@@ -1234,15 +1251,37 @@ class cPage extends cMetaData
     return new cSet($aAppName, $aSetName, $aPage);
   }
 
-  public static function settingsCreate($aPageParams)
+  public static function settingsCreate()
   {
-    self::$settingsInstance = new cPageSettings($aPageParams);
+    self::$settingsInstance = new cPageSettings();
   }
 
   public static function settingsGet()
   {
     eAssert(isset(self::$settingsInstance), 'Page settings not created');
     return self::$settingsInstance;
+  }
+
+  public function templateProcess($aTemplate, $aValuesArray)
+  {
+    try
+    {
+      $aValuesArray['v'] = $aValuesArray;
+      extract($aValuesArray, EXTR_SKIP);
+      ob_start();
+      eval(' ?>'.$aTemplate.'<?php ');
+      return ob_get_clean();
+    }
+    catch (Exception $e)
+    {
+      ob_get_clean();
+
+      $lFunction = $this->settings->onTemplateErrorFunction;
+      if ($lFunction)
+        return $lFunction($e);
+      else
+        throw $e;
+    }
   }
 
   public function workDirByLevelGet($aLevelName)
@@ -1346,14 +1385,6 @@ abstract class cBlock extends cMetaData
 
   protected function init()//!to override
   {
-    if (isset($this->settingsXmlNode))
-    {
-      $this->settingsRead($this->settingsXmlNode);
-
-      if (!$this->cache->isValid && !$this->settingsXmlNode->isAllRead())//!! for test
-        throw new Exception('Not read settingsXmlNode:'.
-          $this->settingsXmlNode->saveToString());
-    }
   }
 
   private function initMt($aComponentNameFull)
@@ -1364,7 +1395,6 @@ abstract class cBlock extends cMetaData
     {
       $this->initMtInternal(
         $aComponentNameFull,
-        $this->appName.'.'.$this->page->set->name.'.'.$this->name,
         $this->page->workDirs,
         $this->appName.'.'.$this->page->set->name.'.'.$this->page->name.'.'.
           $this->name);
@@ -1372,8 +1402,8 @@ abstract class cBlock extends cMetaData
     }
   }
 
-  private function initMtInternal($aComponentNameFull, $aSetBlockNameFull,
-    array $aPageWorkDirs, $aBlockNameFull)
+  private function initMtInternal($aComponentNameFull, array $aPageWorkDirs,
+    $aBlockNameFull)
   {
     if ($aBlockNameFull)
     {
@@ -1395,15 +1425,13 @@ abstract class cBlock extends cMetaData
 
         if (count($lInheritedParams))
           for ($i = 0, $l = count($lInheritedParams); $i < $l; $i++)
-            $this->initMtInternal($aComponentNameFull, $aSetBlockNameFull,
-              $aPageWorkDirs, $lInheritedParams[$i]);
+            $this->initMtInternal($aComponentNameFull, $aPageWorkDirs,
+              $lInheritedParams[$i]);
         else
-          $this->initMtInternal($aComponentNameFull, $aSetBlockNameFull,
-            $aPageWorkDirs, '');
+          $this->initMtInternal($aComponentNameFull, $aPageWorkDirs, '');
       }
       else
-        $this->initMtInternal($aComponentNameFull, $aSetBlockNameFull,
-          $aPageWorkDirs, '');
+        $this->initMtInternal($aComponentNameFull, $aPageWorkDirs, '');
     }
     else
     if (count($aPageWorkDirs))
@@ -1423,31 +1451,7 @@ abstract class cBlock extends cMetaData
         }
 
       }
-      $this->initMtInternal($aComponentNameFull, $aSetBlockNameFull, array(), '');
-    }
-    else
-    if ($aSetBlockNameFull)
-    {
-      $lNames = $this->nameFullExplode($aSetBlockNameFull, 3);
-
-      $lAppName   = $lNames[0];
-      $lSetName   = $lNames[1];
-      $lBlockName = $lNames[2];
-
-      $lWorkDir = $this->appDirGet($lAppName).'templates/sets/'.
-        $lSetName.'/blocks/'.$lBlockName.'/';
-
-      $lXmlDocument = $this->configCheck($lWorkDir, 'SetBlock');
-
-      if ($lXmlDocument)
-      {
-        $lInheritedParams = $this->inheritedParamsGet($lXmlDocument);//!!Add InheritedType SetBlock
-
-        for ($i = 0, $l = count($lInheritedParams); $i < $l; $i++)
-          $this->initMtInternal($aComponentNameFull, $lInheritedParams[$i], array(), '');
-      }
-      else
-        $this->initMtInternal($aComponentNameFull, '', array(), '');
+      $this->initMtInternal($aComponentNameFull, array(), '');
     }
     else
     if ($aComponentNameFull)
@@ -1458,7 +1462,7 @@ abstract class cBlock extends cMetaData
       $lLibraryName   = $lNames[1];
       $lComponentName = $lNames[2];
 
-      $lWorkDir = $this->appDirGet($lAppName).'templates/libraries/'.
+      $lWorkDir = $this->appDirGet($lAppName).'tpl/lib/'.
         $lLibraryName.'/'.$lComponentName.'/';
 
       $lXmlDocument = $this->configCheck($lWorkDir, 'Block');
@@ -1468,7 +1472,7 @@ abstract class cBlock extends cMetaData
         $lInheritedParams = $this->inheritedParamsGet($lXmlDocument);//!!Add InheritedType Component
 
         for ($i = 0, $l = count($lInheritedParams); $i < $l; $i++)
-          $this->initMtInternal($lInheritedParams[$i], '', array(), '');
+          $this->initMtInternal($lInheritedParams[$i], array(), '');
       }
     }
     else
@@ -1537,6 +1541,11 @@ abstract class cBlock extends cMetaData
       $this->blocks[$i]->stylesGetRecursive($aStyles, $aNotCollectedStyles);
   }
 
+  protected function templateProcess($aTemplate, $aValuesArray)
+  {
+    $this->page->templateProcess($aTemplate, $aValuesArray);
+  }
+
   public function workDirByLevelGet($aLevelName)
   {
     if ($this->nameByLevelExplode($aLevelName, $lName) == self::LEVEL_BLOCK)
@@ -1564,4 +1573,7 @@ abstract class cBlock extends cMetaData
       return $this->page->workDirByLevelGet($aLevelName);
   }
 }
+
+//!Init
+cPage::settingsCreate();
 ?>
