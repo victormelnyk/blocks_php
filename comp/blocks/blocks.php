@@ -80,7 +80,7 @@ class cPageSettings
 
 class cCache
 {
-  private $cacheDir = '';
+  public $cacheDir = '';
 
   public $data     = array();
   public $isActive = false;
