@@ -187,6 +187,11 @@ class cWebFile
   }
 }
 
+abstract class cContext //!!
+{
+
+}
+
 abstract class cMetaData
 { //!FileLevels
   const LEVEL_SET      = 's';
@@ -602,7 +607,7 @@ abstract class cMetaData
 
   public function scriptsDefaultGet(cNamedIndexedList $aScripts)
   {
-    $this->fileDataAddToListIfExist($aScripts, 'web/js/.js');
+    $this->fileDataAddToListIfExist($aScripts, 'web/.js');
   }
 
   protected function settingsRead(cXmlNode $aXmlNode) //!to override
@@ -645,8 +650,10 @@ abstract class cMetaData
           break;
         case 'tag':
           $lValues[] = $this->tags->get($lTagParam)->gerS();
-        case 'l':
+        case 'ln':
           $lValues[] = $this->page->language;
+        case 'name':
+          $lValues[] = $this->nam;
           break;
         default:
           throw new Exception('Not suported tag: "'.$lTag.'"');
@@ -662,7 +669,7 @@ abstract class cMetaData
 
   public function stylesDefaultGet(cNamedIndexedList $aStyles)
   {
-    $this->fileDataAddToListIfExist($aStyles, 'web/css/.css');
+    $this->fileDataAddToListIfExist($aStyles, 'web/.css');
   }
 
   public function stylesGet(cNamedIndexedList $aStyles,
@@ -876,8 +883,8 @@ class cPage extends cMetaData
     if (!paramSessionGetCheck('language', VAR_TYPE_STRING, $this->language))
       $this->language = $this->defaultLanguage;
 
-    $lCache = new cCache($lSettings->rootDir.$lAppName.'/'.
-      $lSettings->cacheDir.$lSetName.'/'.$lPageName.'/', $lSettings->isCache);
+    $lCache = new cCache($lSettings->rootDir.$lAppName.'/tmp/cache/'.
+      $lSetName.'/'.$lPageName.'/', $lSettings->isCache);
 
     parent::__construct($lAppName, $lPageName, $this, $lCache, $lSettings);
 
