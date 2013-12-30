@@ -1,0 +1,15 @@
+<?var_dump($v);?>
+<table border="1">
+<?
+for ($i = 0, $l = count($recordset); $i < $l; $i++)
+{
+  p('<tr>');
+
+  $lRecord = $recordset[$i];
+  foreach ($lRecord as $lFieldName => $lValue)
+    p('<td>'.$lFieldName.'<br/>'.$lValue.'</td>');
+
+  p('</tr>');
+}
+?>
+</table>
