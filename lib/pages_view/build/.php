@@ -1,11 +1,11 @@
 <?php
-class cBlocks_PagePreview_Build extends cBlock
+class cBlocks_PagesView_Build extends cBlock
 {
   private $recordset = array();
 
   public function build()
   {
-    return templateProcess($this->fileFirstExistDataGet('.htm'), array(
+    return $this->templateProcess($this->fileFirstExistDataGet('.htm'), array(
       'recordset' => $this->recordset
     ));
   }
