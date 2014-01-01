@@ -305,16 +305,20 @@ abstract class cMetaData
     if ($lXmlDocument->nodes->nextGetCheckByN('Tags', $lTags))
     {
       while ($lTags->nodes->nextGetCheck($lTag))
-        $this->tagsMl->add($lTag->name, $lTag->getS());
+        $this->tags->add($lTag->name, $lTag->getS());
       $lXmlDocument->nodes->currDeleteByN('Tags');
     }
 
-    $lXmlString = $lXmlDocument->saveToString();
-    $lXmlString = $this->stringTagsProcess($lXmlString, array());
-    $lXmlDocument = new cXmlDocument();
-    $lXmlDocument->loadFromString($lXmlString);
+    if ($lXmlDocument->nodes->count() || $lXmlDocument->attrs->count())
+    {
+      $lXmlString = $lXmlDocument->saveToString();
+      $lXmlString = $this->stringTagsProcess($lXmlString, array());
+      $lXmlDocument = new cXmlDocument();
+      $lXmlDocument->loadFromString($lXmlString);
 
-    $this->configReadInternal($lXmlDocument);
+      $this->configReadInternal($lXmlDocument);
+    }
+
     $lXmlDocument->allReadAsser();
   }
 
@@ -563,7 +567,7 @@ abstract class cMetaData
       break;
     case 2:
       $aRunDirName = $lParams[0];
-      eAssert($lParams[1] == 'host', 'Not supported param ' + $lParams[1]);
+      eAssert($lParams[1] == 'host', 'Not supported param ' + $lParams[1]);//!!check
       $lIsAbsolute = true;
       break;
     default:
@@ -638,29 +642,48 @@ abstract class cMetaData
       else
       {
         $lTagArray = explode('|', $lTag);
-        eAssert(count($lTagArray) == 2, 'Not valid tag: "'.$lTag.'"');
-        $lTagKey = $lTagArray[0];
-        $lTagParam = $lTagArray[1];
 
-        switch ($lTagKey) {
-        case 'fileFlpByLevelGet':
-          $lValues[] = $this->fileFlpByLevelGet($lTagParam);
+        switch (count($lTagArray)) {
+        case 1:
+          $lTagKey = $lTagArray[0];
+
+          switch ($lTagKey) {
+          case 'Language':
+            $lValues[] = $this->page->language;
+            break;
+          case 'Name':
+            $lValues[] = $this->name;
+            break;
+          default:
+            throw new Exception('Not suported tag: "'.$lTag.'"');
+            break;
+          }
+
           break;
-        case 'workDirByLevelGet':
-          $lValues[] = $this->workDirByLevelGet($lTagParam);
-          break;
-        case 'runDirGet':
-          $lValues[] = $this->runDirGet($lTagParam);
-          break;
-        case 'ml':
-          $lValues[] = $this->localizationTagValueGet($lTagParam);
-          break;
-        case 'tag':
-          $lValues[] = $this->tags->get($lTagParam)->gerS();
-        case 'ln':
-          $lValues[] = $this->page->language;
-        case 'name':
-          $lValues[] = $this->nam;
+        case 2:
+          $lTagKey   = $lTagArray[0];
+          $lTagParam = $lTagArray[1];
+
+          switch ($lTagKey) {
+          case 'fileFlpByLevelGet'://!!Capitalized
+            $lValues[] = $this->fileFlpByLevelGet($lTagParam);
+            break;
+          case 'workDirByLevelGet':
+            $lValues[] = $this->workDirByLevelGet($lTagParam);
+            break;
+          case 'runDirGet':
+            $lValues[] = $this->runDirGet($lTagParam);
+            break;
+          case 'ml':
+            $lValues[] = $this->localizationTagValueGet($lTagParam);
+            break;
+          case 'Tag':
+            $lValues[] = $this->tags->getByN($lTagParam);
+            break;
+          default:
+            throw new Exception('Not suported tag: "'.$lTag.'"');
+          }
+
           break;
         default:
           throw new Exception('Not suported tag: "'.$lTag.'"');
