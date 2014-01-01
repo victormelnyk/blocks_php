@@ -1,6 +1,6 @@
 <?php
-cPage::moduleAdd('blocks/libraries/db_view/controler/.php');
-cPage::moduleAdd('blocks/components/helpers/recordset_grid_adaptation/.php');
+cPage::moduleAdd('blocks/lib/db_view/controler/.php');
+cPage::moduleAdd('blocks/comp/helpers/recordset_grid_adaptation/.php');
 
 class cColCountOption extends cOptionBase
 {

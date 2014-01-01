@@ -356,8 +356,8 @@ abstract class cMetaData
       if (!$lSettingsNode->nodes->count() && !$lSettingsNode->attrs->count())
         return;
 
-      $this->settingsRead($lSettingsNode);
       $this->settingsXmlNode = $lSettingsNode;
+      $aXmlDocument->nodes->currDeleteByN('Settings');
     }
   }
 
@@ -506,7 +506,6 @@ abstract class cMetaData
     {
       $this->settingsXmlNode = new cXmlDocument();
       $this->settingsXmlNode->loadFromString($aCacheData['settingsXml']);
-      $this->settingsRead($this->settingsXmlNode);
     }
   }
 
@@ -610,6 +609,16 @@ abstract class cMetaData
 
   protected function settingsRead(cXmlNode $aXmlNode) //!to override
   {
+  }
+
+  protected function settingsReadProcess()
+  {
+    if (isset($this->settingsXmlNode))
+    {
+      $this->settingsRead($this->settingsXmlNode);
+      if (!$this->cache->isValid)
+        $this->settingsXmlNode->allReadAsser();
+    }
   }
 
   private function stringTagsProcess($aString, array $aTagsValues)
@@ -770,6 +779,8 @@ class cSet extends cMetaData
       $this->initMtInternal('blocks.sys');
       $this->configRead();
     }
+
+    $this->settingsReadProcess();
   }
 
   private function initMtInternal($aSetNameFull)
@@ -1137,6 +1148,8 @@ class cPage extends cMetaData
       $this->configRead();
     }
 
+    $this->settingsReadProcess();
+
     $this->blocksAdd();
   }
 
@@ -1390,6 +1403,7 @@ abstract class cBlock extends cMetaData
 
   protected function init()//!to override
   {
+    $this->settingsReadProcess();
   }
 
   private function initMt($aComponentNameFull)
