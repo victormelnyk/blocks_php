@@ -353,13 +353,11 @@ abstract class cMetaData
 
     if ($aXmlDocument->nodes->nextGetCheckByN('Settings', $lSettingsNode))
     {
-
       if (!$lSettingsNode->nodes->count() && !$lSettingsNode->attrs->count())
         return;
 
       $this->settingsRead($lSettingsNode);
       $this->settingsXmlNode = $lSettingsNode;
-
     }
   }
 
@@ -1550,7 +1548,7 @@ abstract class cBlock extends cMetaData
 
   protected function templateProcess($aTemplate, $aValuesArray)
   {
-    $this->page->templateProcess($aTemplate, $aValuesArray);
+    return $this->page->templateProcess($aTemplate, $aValuesArray);
   }
 
   public function workDirByLevelGet($aLevelName)
