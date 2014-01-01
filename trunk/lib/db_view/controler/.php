@@ -1,5 +1,5 @@
 <?php
-cPage::moduleAdd('blocks/libraries/sys/named_list/.php');
+cPage::moduleAdd('blocks/lib/sys/named_list/.php');
 
 abstract class cOptionBase
 {
@@ -728,7 +728,7 @@ class cBlocks_DbView_Controler extends cBlocks_Sys_NamedList
 
     $lValues['params'] = $this->params;
 
-    return templateProcess($this->fileFirstExistDataGet('.htm'), $lValues);
+    return $this->templateProcess($this->fileFirstExistDataGet('.htm'), $lValues);
   }
 
   protected function init()
@@ -743,7 +743,7 @@ class cBlocks_DbView_Controler extends cBlocks_Sys_NamedList
 
     $this->sql = $this->fileFirstExistDataGet('.sql');
 
-    $this->sql = templateProcess($this->sql,
+    $this->sql = $this->templateProcess($this->sql,
       array(
         'where' => $this->filter->sqlAndParamsGet($this->sqlParams),
         'order' => $this->order->sqlGet(),

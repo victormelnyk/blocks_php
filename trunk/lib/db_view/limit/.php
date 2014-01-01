@@ -1,5 +1,5 @@
 <?php
-cPage::moduleAdd('blocks/components/helpers/page_navigator/.php');
+cPage::moduleAdd('blocks/comp/helpers/page_navigator/.php');
 
 class cBlocks_DbView_Limit extends cBlock
 {
@@ -15,7 +15,7 @@ class cBlocks_DbView_Limit extends cBlock
     }
 
     $lLimit = $this->owner->limit;
-    return templateProcess($this->fileFirstExistDataGet('.htm'), array(
+    return $this->templateProcess($this->fileFirstExistDataGet('.htm'), array(
       'paramName'          => $lLimit->paramName,
       'pageNoParamName'    => $lLimit->pageNoParamName,
       'options'            => $lLimit->asArrayGet(),

@@ -13,7 +13,7 @@ class cBlocks_DbView_Order extends cBlock
     }
 
     $lOrder = $this->owner->order;
-    return templateProcess($this->fileFirstExistDataGet('.htm'), array(
+    return $this->templateProcess($this->fileFirstExistDataGet('.htm'), array(
       'paramName'          => $lOrder->paramName,
       'directionParamName' => $lOrder->directionParamName,
       'options'            => $lOrder->asArrayGet(),

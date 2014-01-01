@@ -1,5 +1,5 @@
 <?php
-cPage::moduleAdd('blocks/libraries/edit_form/form/.php');
+cPage::moduleAdd('blocks/lib/edit_form/form/.php');
 
 //!EDIT_MODE
 define('EDIT_MODE_UNDEFINED', 'undefined');

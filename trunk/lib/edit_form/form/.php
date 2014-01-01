@@ -1,5 +1,5 @@
 <?php
-cPage::moduleAdd('blocks/libraries/db_view/controler/.php');//!!common classes
+cPage::moduleAdd('blocks/lib/db_view/controler/.php');
 
 class cFormOption extends cOptionBase
 {
