@@ -1,5 +1,5 @@
 <?php
-cPage::moduleAdd('blocks/components/helpers/recordset_tree_adaptation/.php');
+cPage::moduleAdd('blocks/comp/helpers/recordset_tree_adaptation/.php');
 
 class cBlocks_Effects_MenuStatic extends cBlock
 {
@@ -9,7 +9,7 @@ class cBlocks_Effects_MenuStatic extends cBlock
 
   public function build()
   {
-    return templateProcess($this->fileFirstExistDataGet('.htm'),
+    return $this->templateProcess($this->fileFirstExistDataGet('.htm'),
       array('recordset' => $this->recordset));
   }
 
