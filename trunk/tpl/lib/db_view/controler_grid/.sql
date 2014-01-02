@@ -9,6 +9,6 @@ SELECT
   T.f_float,
   T.f_datetime
 FROM types T
-<?print($where)?>
-<?print($order)?>
-<?print($limit)?>
+<?p($where)?>
+<?p($order)?>
+<?p($limit)?>

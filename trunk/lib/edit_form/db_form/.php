@@ -204,7 +204,7 @@ class cBlocks_EditForm_DbForm extends cBlocks_EditForm_Form
   public function build()
   {
     $lForm = $this->form;
-    return templateProcess($this->fileFirstExistDataGet('.htm'), array(
+    return $this->templateProcess($this->fileFirstExistDataGet('.htm'), array(
       'editMode'    => $lForm->editMode,
       'callbackUrl' => $lForm->callbackUrl,
       'options'     => $lForm->asArrayGet()

@@ -1218,7 +1218,7 @@ class cPage extends cMetaData
     {
       $lFunction = self::settingsGet()->onErrorFunction;
       if ($lFunction)
-        print($lFunction($e));
+        p($lFunction($e));
       else
         exceptionShow($e);
     }*/
@@ -1259,7 +1259,7 @@ class cPage extends cMetaData
     if ($this->settings->isProfile)
       cPFHelper::stop();
 
-    print($lResult);
+    p($lResult);
   }
 
   private function saveAllToCache()

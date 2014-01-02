@@ -296,12 +296,12 @@ function exceptionToString($aException)
 
 function exceptionShow($aException)
 {
-  print(exceptionToString($aException));
+  p(exceptionToString($aException));
 }
 
 function exceptionXmlShow($aException)
 {
-  print('<error><![CDATA['.exceptionToString($aException).']]></error>');
+  p('<error><![CDATA['.exceptionToString($aException).']]></error>');
 }
 //!tag
 function tagsFind($aStr)
