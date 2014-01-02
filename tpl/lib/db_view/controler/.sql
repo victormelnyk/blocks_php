@@ -21,6 +21,6 @@ FROM types T
     WHERE 2 = 2
     LIMIT 1
   ) AS _T ON _T.id = T.id
-<?print($where)?>
-<?print($order)?>
-<?print($limit)?>
+<?p($where)?>
+<?p($order)?>
+<?p($limit)?>

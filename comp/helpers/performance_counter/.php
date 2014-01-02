@@ -71,7 +71,7 @@ class cPCHelper
 
   public static function saveToHtml()
   {
-    print(self::infoGetAll('<br>'));
+    p(self::infoGetAll('<br>'));
   }
 }
 ?>
