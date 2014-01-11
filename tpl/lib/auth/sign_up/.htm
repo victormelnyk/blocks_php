@@ -1,0 +1,46 @@
+<div id="sign_up">
+<?
+if ($status)
+{
+?>
+  <~ml|Welcome~> "<?p($params['name'])?>"<br>
+<?
+}
+else
+{
+  $lIsError = false;//!!fix it
+  $lIsParamsError = ($errorType == 'ParamsError');
+?>
+<br>
+<form onsubmit="return page.signUp.submitCheck(this);">
+  <input style="color: <?p($lIsError ? 'red' : 'black')?>"
+    type="text" name="name" value="<?p($params['name'])?>" size="30"
+    maxlength="50"/>
+  <br>
+<?
+  $lIsLoginExist = ($errorType == 'LoginError');
+  $lIsError = ($lIsParamsError && !$params['login']) || $lIsLoginExist;
+?>
+  <input style="color: <?p($lIsError ? 'red' : 'black');?>"
+    type="text" name="login" value="<?p($params['login']);?>" size="30"
+    maxlength="50"/>
+  <br>
+<?
+  $lIsConfirmError = ($errorType == 'PasswordConfirmError');
+  $lIsError = ($lIsParamsError && !$params['password']) || $lIsConfirmError;
+?>
+  <input style="color: <?p($lIsError ? 'red' : 'black');?>"
+    type="password" name="password" value="" size="30" maxlength="15"/>
+  <br>
+<?
+  $lIsError = ($lIsParamsError && !$params['password_confirm']) || $lIsConfirmError;
+?>
+  <input style="color: <?p($lIsError ? 'red' : 'black');?>"
+    type="password" name="password_confirm" value="" size="30" maxlength="15"/>
+  <br>
+  <input type="submit" class="btn-base btn-medium" value="SignUp" title="SignUp"/>
+</form>
+<?
+}
+?>
+</div>
