@@ -1,0 +1,41 @@
+//!!not updated
+<div id="password_change">
+<?
+if ($status)
+{
+?>
+  You password changed<br/>
+<?
+}
+else
+{
+  $lIsParamsError = ($errorType == 'params');
+  $lIsCheck = ($errorType == 'check');
+  $lIsError = ($lIsParamsError && !$params['password_old']) || $lIsCheck;
+?>
+<br>
+<form onsubmit="return page.passwordChange.submitCheck(this);">
+  <input style="color: <?p($lIsError ? 'red' : 'black');?>"
+    type="text" name="password_old" value="<?p($params['password_old']);?>"
+    size="30" maxlength="50"/>
+  <br>
+<?
+  $lIsConfirmError = ($errorType == 'confirm');
+  $lIsError = ($lIsParamsError && !$params['password_new']) || $lIsConfirmError;
+?>
+  <input style="color: <?p($lIsError ? 'red' : 'black');?>"
+    name="password_new" value="" size="30"
+    maxlength="50"/>
+  <br>
+<?
+  $lIsError = ($lIsParamsError && !$params['password_new_confirm']) || $lIsConfirmError;
+?>
+  <input style="color: <?p($lIsError ? 'red' : 'black');?>"
+    type="password" name="password_new_confirm" value="" size="30" maxlength="15"/>
+  <br>
+  <input type="submit" class="btn-base btn-medium" value="Change" title="Password change"/>
+</form>
+<?
+}
+?>
+</div>

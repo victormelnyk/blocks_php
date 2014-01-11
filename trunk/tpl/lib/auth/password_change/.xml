@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Block>
+  <Inherited/>
+  <Scripts>
+    <_i-Script>s:web/comp/form_checker/.js</_i-Script>
+  </Scripts>
+  <InitScripts>
+    <InitScript><![CDATA[
+      page.passwordChange = new page.cPasswordChange('sign_up',
+        ['password_old', 'password_new', 'password_new_confirm'],
+        false,
+        {
+          passwordConfirmError: 'Passwords are different.',
+          error: 'Please check form.'
+        })
+    ]]></InitScript>
+  </InitScripts>
+</Block>

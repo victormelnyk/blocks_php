@@ -18,8 +18,10 @@
 
 class cPageSettings
 {
-  public $db       = null;
-  public $rootDir  = '';
+  public $rootDir = '';
+
+  public $db      = null;
+  public $context = null;
 
   public $isCache   = true;
   public $isProfile = false;
@@ -187,9 +189,27 @@ class cWebFile
   }
 }
 
-abstract class cContext //!!
+abstract class cContext
 {
+  protected $page = null;
 
+  public function pageSet(cPage $aPage)
+  {
+    $this->page = $aPage;
+  }
+
+  public function settingsReadPage(cXmlNode $aXmlNode)
+  {
+  }
+
+  public function settingsReadSet(cXmlNode $aXmlNode)
+  {
+  }
+
+  public function validate()
+  {
+    return false;
+  }
 }
 
 abstract class cMetaData
@@ -838,6 +858,14 @@ class cSet extends cMetaData
     $aCacheData['runDirs']  = $this->runDirs;
   }
 
+  protected function settingsRead(cXmlNode $aXmlNode)
+  {
+    parent::settingsRead($aXmlNode);
+
+    if ($this->settings->context)
+      $this->settings->context->settingsReadSet($aXmlNode);
+  }
+
   public function workDirByLevelGet($aLevelName)
   {
     $lLevel = $this->nameByLevelExplode($aLevelName, $lName);
@@ -924,6 +952,9 @@ class cPage extends cMetaData
 
     $this->set = $this->setCreate($lAppName, $lSetName, $this);
 
+    if ($this->settings->context)
+      $this->settings->context->pageSet($this);
+
     $this->params = new cParams();
 
     $this->initMt();
@@ -975,6 +1006,9 @@ class cPage extends cMetaData
 
   protected function build()
   {
+    if ($this->settings->context && !$this->settings->context->validate())
+      return '';
+
     for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
       $this->blocks[$i]->initRecursive();
 
@@ -1301,6 +1335,14 @@ class cPage extends cMetaData
   {
     eAssert(isset(self::$settingsInstance), 'Page settings not created');
     return self::$settingsInstance;
+  }
+
+  protected function settingsRead(cXmlNode $aXmlNode)
+  {
+    parent::settingsRead($aXmlNode);
+
+    if ($this->settings->context)
+      $this->settings->context->settingsReadPage($aXmlNode);
   }
 
   public function templateProcess($aTemplate, $aValuesArray)

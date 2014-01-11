@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Block>
+  <Inherited/>
+  <Localization>
+    <Tags>
+      <Enter>
+        <en>Enter</en>
+        <uk>Увійти</uk>
+        <ru>Войти</ru>
+      </Enter>
+      <Exit>
+        <en>Exit</en>
+        <uk>Вийти</uk>
+        <ru>Выйти</ru>
+      </Exit>
+      <Error>
+        <en>Please check the form is corect.</en>
+        <uk>Будь ласка, перевірте, що форму заповнено повністю і правильно.</uk>
+        <ru>Пожалуйста, проверьте, что форма заполнена полностью и правильно.</ru>
+      </Error>
+    </Tags>
+  </Localization>
+  <Scripts>
+    <_i-Script>s:web/comp/form_checker/.js</_i-Script>
+  </Scripts>
+  <InitScripts>
+    <InitScript><![CDATA[
+      page.login = new page.cLogin();
+    ]]></InitScript>
+  </InitScripts>
+</Block>
