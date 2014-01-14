@@ -552,7 +552,7 @@ abstract class cMetaData
       return $lValue;
     else
       throw new Exception('Can not get LocalizationTagValue for Tag: "'.
-        $aTagName.'"');
+        $aTagName.'" by language: "'.$this->page->language.'"');
   }
 
   protected function nameByLevelExplode($aLevelName, &$aName)
@@ -1283,7 +1283,7 @@ class cPage extends cMetaData
   public function process()
   {
     if ($this->settings->isTest)
-      $this->initScriptAdd('page = {}; page.isTestMode = true;');//!!
+      $this->initScriptAdd('if (!window.page) page = {}; page.isTestMode = true;');//!!
 
     if (paramPostGetGetCheck('blocks', VAR_TYPE_STRING, $lParam))//!!
       $lResult = $this->buildByBlockNames(explode(',', $lParam));
