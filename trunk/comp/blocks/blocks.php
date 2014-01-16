@@ -1006,9 +1006,6 @@ class cPage extends cMetaData
 
   protected function build()
   {
-    if ($this->settings->context && !$this->settings->context->validate())
-      return '';
-
     for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
       $this->blocks[$i]->initRecursive();
 
@@ -1282,13 +1279,18 @@ class cPage extends cMetaData
 
   public function process()
   {
-    if ($this->settings->isTest)
-      $this->initScriptAdd('if (!window.page) page = {}; page.isTestMode = true;');//!!
+    if ($this->settings->context && !$this->settings->context->validate())
+      return;
 
     if (paramPostGetGetCheck('blocks', VAR_TYPE_STRING, $lParam))//!!
       $lResult = $this->buildByBlockNames(explode(',', $lParam));
     else
+    {
+      if ($this->settings->isTest)
+        $this->initScriptAdd('if (!window.page) page = {}; page.isTestMode = true;');//!!
+
       $lResult = $this->build();
+    }
 
     if ($this->settings->isProfile)
       cPFHelper::stop();
