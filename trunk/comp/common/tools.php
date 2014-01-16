@@ -21,17 +21,22 @@ define('INPUT_TYPE_TIME',     'time');
 
 //!functions
 //!common
+function p($aValue)
+{
+  print($aValue);
+}
+//!exception
 function eAssert($aCondition, $aMessage = 'Assert')
 {
   if (!$aCondition)
     throw new Exception($aMessage);
 }
 
-function p($aValue)
+function notSupportedRaise($aMessage)
 {
-  print($aValue);
+  throw new Exception('Not supported'.$aMessage);
 }
-
+//!varType
 function varTypeCheckAssert($aVarType)
 {
   switch ($aVarType) {
