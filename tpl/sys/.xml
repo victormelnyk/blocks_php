@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Set>
   <Inherited/>
-  <Localization/>
+  <Localization DefaultLanguage="en"/>
   <Tags/>
   <Styles/>
   <Scripts/>
