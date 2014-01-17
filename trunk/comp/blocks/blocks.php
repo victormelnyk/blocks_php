@@ -230,6 +230,7 @@ abstract class cMetaData
   protected $scripts = null;
   protected $styles  = null;
 
+  public $defaultLanguage = '';
   public $filesByMl = array(); //!! ->LocalizationFiles
   public $tagsMl = Null;
   public $tags = Null;
@@ -299,6 +300,10 @@ abstract class cMetaData
     if ($lXmlDocument->nodes->nextGetCheckByN('Localization',
       $lLocalizationNode))
     {
+      if ($lLocalizationNode->attrs->nextGetCheckByN('DefaultLanguage',
+        $lDefaultLanguageAttr))
+        $this->defaultLanguage = $lDefaultLanguageAttr->getS();
+
       if ($lLocalizationNode->nodes->nextGetCheckByN('FilesByMl',
         $lFilesByMlNode))
         while ($lFilesByMlNode->nodes->nextGetCheckByN('F', $lFileByMlNode))
@@ -475,7 +480,7 @@ abstract class cMetaData
           $lFileName.'_'.$this->page->language;
         $lRelativeFilePaths[] = implode('.', $lFilePathParts);
         $lFilePathParts[$lFilePathPartCount - 1 - 1] =
-          $lFileName.'_'.$this->page->defaultLanguage;
+          $lFileName.'_'.$this->page->set->defaultLanguage;
         $lRelativeFilePaths[] = implode('.', $lFilePathParts);
       }
 
@@ -548,7 +553,7 @@ abstract class cMetaData
       return $lValue;
     else
     if ($this->localizationTagValueGetCheck($aTagName,
-      $this->page->defaultLanguage, $lValue))
+      $this->page->set->defaultLanguage, $lValue))
       return $lValue;
     else
       throw new Exception('Can not get LocalizationTagValue for Tag: "'.
@@ -757,10 +762,10 @@ class cSet extends cMetaData
 
   public $runDirs = array();
 
-  public function __construct($aAppName, $aSetName, cPage $aPage)
+  public function __construct($aAppName, $aSetName, cPage $aPage, cCache $aCache,
+    cPageSettings $aSettings)
   {
-    parent::__construct($aAppName, $aSetName, $aPage, $aPage->cache,
-      $aPage->settings);
+    parent::__construct($aAppName, $aSetName, $aPage, $aCache, $aSettings);
 
     $this->initMt();
   }
@@ -769,7 +774,7 @@ class cSet extends cMetaData
   {
     parent::configReadInternal($aXmlDocument);
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('Title', $lTitleNode))
+     if ($aXmlDocument->nodes->nextGetCheckByN('Title', $lTitleNode))
       $this->title = $lTitleNode->getS();
 
     if ($aXmlDocument->nodes->nextGetCheckByN('Meta', $lMetaNode))
@@ -922,7 +927,6 @@ class cPage extends cMetaData
   public $title = '';
   public $meta = '';
 
-  public $defaultLanguage = '';
   public $language = '';
 
   public $blocks      = array();
@@ -937,20 +941,21 @@ class cPage extends cMetaData
     $lPageName = basename($_SERVER['SCRIPT_NAME'], '.php');
     $lSettings = self::settingsGet();
 
+    $lCache = new cCache($lSettings->rootDir.$lAppName.'/tmp/cache/'.
+      $lSetName.'/'.$lPageName.'/', $lSettings->isCache);
+
+    $this->set = $this->setCreate($lAppName, $lSetName, $this, $lCache,
+      $lSettings);
+
     if (paramPostGetGetCheck('l', VAR_TYPE_STRING, $this->language))//!!use params logic
       $_SESSION['language'] = $this->language;
     else
     if (!paramSessionGetCheck('language', VAR_TYPE_STRING, $this->language))
-      $this->language = $this->defaultLanguage;
-
-    $lCache = new cCache($lSettings->rootDir.$lAppName.'/tmp/cache/'.
-      $lSetName.'/'.$lPageName.'/', $lSettings->isCache);
+      $this->language = $this->set->defaultLanguage;
 
     parent::__construct($lAppName, $lPageName, $this, $lCache, $lSettings);
 
     $this->blocksAll = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
-
-    $this->set = $this->setCreate($lAppName, $lSetName, $this);
 
     if ($this->settings->context)
       $this->settings->context->pageSet($this);
@@ -1148,10 +1153,6 @@ class cPage extends cMetaData
     if ($aXmlDocument->nodes->nextGetCheckByN('Meta', $lMetaNode))
       $this->meta = $lMetaNode->getS();
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('DefaultLanguage',
-      $lDefaultLanguageNode))
-      $this->defaultLanguage = $lDefaultLanguageNode->getS();
-
     if ($aXmlDocument->nodes->nextGetCheckByN('Blocks', $lBlocksNode))
       while ($lBlocksNode->nodes->nextGetCheck($lBlockNode))
       {
@@ -1323,9 +1324,10 @@ class cPage extends cMetaData
     $aCacheData['blocksInfos'] = $this->blocksInfos;
   }
 
-  public function setCreate($aAppName, $aSetName, cPage $aPage)
+  public function setCreate($aAppName, $aSetName, cPage $aPage, cCache $aCache,
+    cPageSettings $aSettings)
   {
-    return new cSet($aAppName, $aSetName, $aPage);
+    return new cSet($aAppName, $aSetName, $aPage, $aCache, $aSettings);
   }
 
   public static function settingsCreate()
