@@ -167,11 +167,16 @@ abstract class cLogonContext extends cContext
 
   private function logonLevelCompare($aFirstValue, $aSecondValue)
   {
-    $lFirstValueIndex  = arrayValueGet($this->logonLevels, $aFirstValue);
-    $lSecondValueIndex = arrayValueGet($this->logonLevels, $aSecondValue);
+    $lFirstValueIndex = 0;
+    arrayValueGetCheck($this->logonLevels, $aFirstValue, $lFirstValueIndex);
+    $lSecondValueIndex = 0;
+    arrayValueGetCheck($this->logonLevels, $aSecondValue, $lSecondValueIndex);
 
     if ($lFirstValueIndex == $lSecondValueIndex)
-      return COMPARE_TYPE_EQUAL;
+      if ($lFirstValueIndex == 0)
+        return COMPARE_TYPE_LESS;
+      else
+        return COMPARE_TYPE_EQUAL;
     else
     if ($lFirstValueIndex > $lSecondValueIndex)
       return COMPARE_TYPE_GREATER;
