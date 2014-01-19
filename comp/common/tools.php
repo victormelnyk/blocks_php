@@ -32,9 +32,10 @@ function eAssert($aCondition, $aMessage = 'Assert')
     throw new Exception($aMessage);
 }
 
-function notSupportedRaise($aMessage)
+function notSupportedRaise($aMessage, $aValue)
 {
-  throw new Exception('Not supported'.$aMessage);
+  throw new Exception('Not supported'.
+    $aMessage.($aValue ? ': "' : '').$aValue.($aValue ? '"': ''));
 }
 //!varType
 function varTypeCheckAssert($aVarType)
@@ -91,10 +92,13 @@ function valueByType($aValue, $aVarType)
     return $aValue;
   case VAR_TYPE_TIME:
   {
+    /*!! not work for 2 days 10:00:00
     $lDateTime = new DateTime($aValue, new DateTimeZone('GMT'));
     if (!$lDateTime)
       throw new Exception('Can not convert value: "'.$aValue.'"'.' to Time');
     return $lDateTime->format('H:i:s');
+    */
+    return $aValue;
   }
   default:
     throw new Exception('Not supported VarType: "'.$aVarType.'"');
