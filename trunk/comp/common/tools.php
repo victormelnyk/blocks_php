@@ -23,7 +23,7 @@ define('INPUT_TYPE_TIME',     'time');
 //!common
 function p($aValue)
 {
-  print($aValue);
+  echo $aValue;
 }
 //!exception
 function eAssert($aCondition, $aMessage = 'Assert')

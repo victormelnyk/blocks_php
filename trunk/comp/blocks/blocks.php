@@ -767,14 +767,14 @@ class cSet extends cMetaData
   {
     parent::__construct($aAppName, $aSetName, $aPage, $aCache, $aSettings);
 
-    $this->initMt();
+    //!!fix work with defaultValue $this->initMt();
   }
 
   protected function configReadInternal(cXmlDocument $aXmlDocument)
   {
     parent::configReadInternal($aXmlDocument);
 
-     if ($aXmlDocument->nodes->nextGetCheckByN('Title', $lTitleNode))
+    if ($aXmlDocument->nodes->nextGetCheckByN('Title', $lTitleNode))
       $this->title = $lTitleNode->getS();
 
     if ($aXmlDocument->nodes->nextGetCheckByN('Meta', $lMetaNode))
@@ -817,7 +817,7 @@ class cSet extends cMetaData
     }
   }
 
-  private function initMt()
+  public function initMt()//!!private
   {
     if ($this->cache->isValid)
       $this->loadFromCache($this->cache->data['set']);
@@ -946,6 +946,7 @@ class cPage extends cMetaData
 
     $this->set = $this->setCreate($lAppName, $lSetName, $this, $lCache,
       $lSettings);
+    $this->set->initMt();
 
     if (paramPostGetGetCheck('l', VAR_TYPE_STRING, $this->language))//!!use params logic
       $_SESSION['language'] = $this->language;
