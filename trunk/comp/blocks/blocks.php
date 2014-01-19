@@ -944,8 +944,7 @@ class cPage extends cMetaData
     $lCache = new cCache($lSettings->rootDir.$lAppName.'/tmp/cache/'.
       $lSetName.'/'.$lPageName.'/', $lSettings->isCache);
 
-    $this->set = $this->setCreate($lAppName, $lSetName, $this, $lCache,
-      $lSettings);
+    $this->set = new cSet($lAppName, $lSetName, $this, $lCache, $lSettings);
     $this->set->initMt();
 
     if (paramPostGetGetCheck('l', VAR_TYPE_STRING, $this->language))//!!use params logic
@@ -1025,7 +1024,8 @@ class cPage extends cMetaData
     {
       $lResult = $this->fileFirstExistDataGet('.htm', true, array(
         'meta' => $this->set->meta.$this->meta,
-        'title'=> $this->set->title.$this->title,
+        'title'=> $this->set->title.
+          ($this->set->title && $this->title ? ' ': '').$this->title,
         'css'  => $this->buildStyles(),
         'js'   => $this->buildScripts()
       ));
@@ -1323,12 +1323,6 @@ class cPage extends cMetaData
   {
     parent::saveToCache($aCacheData);
     $aCacheData['blocksInfos'] = $this->blocksInfos;
-  }
-
-  public function setCreate($aAppName, $aSetName, cPage $aPage, cCache $aCache,
-    cPageSettings $aSettings)
-  {
-    return new cSet($aAppName, $aSetName, $aPage, $aCache, $aSettings);
   }
 
   public static function settingsCreate()
