@@ -73,5 +73,10 @@ class cPCHelper
   {
     p(self::infoGetAll('<br>'));
   }
+
+  public static function saveToString()
+  {
+    return self::infoGetAll('; ');
+  }
 }
 ?>

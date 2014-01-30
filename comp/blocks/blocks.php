@@ -34,7 +34,15 @@ class cPageSettings
   {
     session_start();
   }
-  /*
+
+  public function log($aMessage)
+  {
+    $lFlp = $this->rootDir.'tmp/logs/'.gmdate('YmdHis').'.log';//!! add app name
+    $lData = gmdate('YmdHis').' : '.$aMessage.CRLF;
+    stringToFileExt($lData, $lFlp, True, 'a');
+  }
+
+  /*!! check
     $this->rootDir = arrayValueGetTyped($aPageParams, 'rootDir',
       VAR_TYPE_STRING);
 
