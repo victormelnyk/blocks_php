@@ -1,0 +1,147 @@
+Documentation for FormChecker component v1.0
+
+page.formCheckerRulles {...} - common rulles for check field types
+supported types:
+  - number - only digitals
+  - phone  - digitals and "+" sumbol
+  - email  - standart email, like a@a.ua
+  - date   - date in format dd.mm.yyyy
+
+page.cFormChecker - main class, to create instance call new page.cFormChecker();
+There are two modes of checker works:
+1. work with passed array of params with specified structure:
+[
+  {
+    isRequired: true,     [Boolean, Optimal,  Told that field must have value]
+    isLive:     true,     [Boolean, Optimal,  Told that field will check when you type]
+    type:       'number', [String,  Optimal,  Told that field must have specified type]
+    name:       'field1', [String,  Required, Field name in form]
+    length:     10,       [Integer, Optimal,  Told that field value length must have specified length]
+    maxlength:  10        [Integer, Optimal,  Told that field value length must have less or equal length]
+  },
+  ...
+]
+
+2. work with fields that has class "form_field" and took all needed params from
+  HTML elements(read special attributes and classes):
+  - classes:
+    - "check"      - only check field value
+      (field could be empty, but if value exists and set some attributes - value will checked)
+    - "validate"   - check and validate(value must exists) field value
+    - "live_check" - alloved live check for field("check" or "validate" class needed)
+
+  - attributes("check" or "validate" class needed):
+    - "valueType"      - check field value by type(types get from formCheckerRulles)
+    - "valueLength"    - check that value length equal value in this attribute
+    - "maxValueLength" - check that value length less or equal value in this attribute
+
+properties:
+  empty
+
+functions:
+  - highlightFunc - default function that call when validation for field is fail
+    it add class error to field and on click remove this class
+    this function could be overridden by other custom function
+
+    params:
+      aElement jQueryElement
+
+  - liveCheckInit - initialize live check for form element
+    "live check" - check form fields when you typing
+    (work only for mode #2)
+
+    params:
+      aFormElement  jQueryElement
+
+  - valueByTypeCheck  - you could check you value by type
+    (types get from formCheckerRulles)
+
+    params:
+      aValue String
+      aType  String [some type, like number or email]
+
+    returns:
+      boolean [true if ok]
+
+  - process - main function that check form, if function returns true - you
+    could use variable from aFormData parametr and send request by AJAX using this
+    valiable as "data" parametr in this request
+
+  aForm, aFormData
+    params:
+      aFormElement   jQueryElement
+      aFormData      FormData [standart FormData class, to create call "new aFormData()"
+                              this function add all fields with name attribute to this class.]
+    returns:
+      boolean [true if ok]
+
+Examples:
+
+1. First mode
+<form onsubmit="onSubmit()">
+  <input name="field1" class="form_field check live_check"
+    valueType="number" maxValueLength="10"/>
+  <input name="field2" class="form_field validate"
+    valueType="number" valueLength="10"/>
+
+  <input type="submit" value="Save"/>
+</form>
+
+
+function onSubmit()
+{
+  page.formChecker = new page.cFormChecker();
+
+  var
+    lFormData = new FomrData();
+
+  if (!page.formChecker.process($('#myForm'), lFormData))
+    return false;
+
+  $.ajax(
+  {
+    url:  'test.php',
+    type: 'POST',
+    data: lFormData,
+    processData: false //required for FomrData
+  },
+  success: function()
+  {
+    alert('ok');
+  });
+}
+
+2. Second mode
+<form onsubmit="onSubmit()">
+  <input name="field1"/>
+  <input name="field2"/>
+
+  <input type="submit" value="Save"/>
+</form>
+
+
+function onSubmit()
+{
+  page.formChecker = new page.cFormChecker([
+    {name: 'field1', isLive: true, type: 'number', maxLength: 10},
+    {name: 'field2', isRequired: true, type: 'number', length: 10}
+  ]);
+
+  var
+    lFormData = new FomrData();
+
+  if (!page.formChecker.process($('#myForm'), lFormData))
+    return false;
+
+  $.ajax(
+  {
+    url:  'test.php',
+    type: 'POST',
+    data: lFormData,
+    processData: false //required for FomrData
+  },
+  success: function()
+  {
+    alert('ok');
+  });
+}
