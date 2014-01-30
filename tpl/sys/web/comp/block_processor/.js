@@ -82,7 +82,7 @@ page.cBlockProcessor = function()
         lResult['b'] = lBlockName;//!!
 
         for (lParamName in lBlockParams)
-          lResult[lParamName] = lBlockParams[lParamName];
+          lResult[lParamName] = lBlockParams[lParamName];//!! Not supported params with identical names
       }
 
       lResult['blocks'] = lBlockNames.join();
@@ -243,14 +243,16 @@ page.cPageBlockProcessor = function()
   return _constructor();
 }
 
-page.blocksRefresh = function(aBlockNames, aOnComplete, aOnError)
+page.blocksRefresh = function(aBlockNames, aBlocksParams, aOnComplete, aOnError)
 {
   var
     lBlockProcessor = new page.cPageBlockProcessor(),
-    lParams = {};
+    lParams = {},
+    lBlocksParams = aBlocksParams || {};
 
-  for(var i = 0, l = aBlockNames.length; i <  l; i++)
-    lParams[aBlockNames[i]] = null;
+  for(var i = 0, l = aBlockNames.length; i < l; i++)
+    lParams[aBlockNames[i]] = lBlocksParams[aBlockNames[i]] || null;
 
-  lBlockProcessor.requestSend(document.location.href, lParams, aOnComplete, aOnError);
+  lBlockProcessor.requestSend(document.location.href, lParams,
+    aOnComplete, aOnError);
 }

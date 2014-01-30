@@ -177,7 +177,7 @@ class cFilterOptionEqual extends cFilterOptionBase
 
   public function paramsRead()
   {
-    if (paramGetGetCheck($this->name, $this->type, $lValue))
+    if (paramPostGetGetCheck($this->name, $this->type, $lValue))
     {
       eAssert(!$this->isReadOnly,
         'Can not set Value for ReadOnly FilterOption: "'.$this->name.'"');
@@ -559,7 +559,7 @@ class cOrder extends cOptionsBase
       return;
 
     if ($this->isReadOnly
-      || !paramGetGetCheck($this->paramName, VAR_TYPE_STRING, $lOptionName))
+      || !paramPostGetGetCheck($this->paramName, VAR_TYPE_STRING, $lOptionName))
       $lOptionName = $this->defaultOptionName;
 
     $this->currentOptionName  = $lOptionName;
@@ -567,7 +567,7 @@ class cOrder extends cOptionsBase
     $this->currentOptionTitle = $this->currentOption->title;
 
     if (!$this->isReadOnlyDirection
-      && paramGetGetCheck($this->directionParamName, VAR_TYPE_BOOLEAN,
+      && paramPostGetGetCheck($this->directionParamName, VAR_TYPE_BOOLEAN,
       $lDirectionParamValue))
       $this->isDesc = $lDirectionParamValue;
   }
@@ -665,7 +665,7 @@ class cLimit extends cOptionsBase
       return;
 
     if ($this->isReadOnly
-      || !paramGetGetCheck($this->paramName, VAR_TYPE_STRING, $lLimitParam))
+      || !paramPostGetGetCheck($this->paramName, VAR_TYPE_STRING, $lLimitParam))
       $lLimitParam = $this->defaultOptionName;
 
     $this->currentOptionName  = $lLimitParam;
@@ -674,7 +674,7 @@ class cLimit extends cOptionsBase
     $this->currentOptionValue = $this->currentOption->value;
 
     if (!$this->isReadOnlyPageNo
-      && paramGetGetCheck($this->pageNoParamName, VAR_TYPE_INTEGER,
+      && paramPostGetGetCheck($this->pageNoParamName, VAR_TYPE_INTEGER,
         $lPageNoParam))
       $this->pageNo = ($lPageNoParam > 0 ? $lPageNoParam : 1);
   }
