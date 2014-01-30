@@ -145,7 +145,7 @@ abstract class cLogonContext extends cContext
       '</div>');
   }
 
-  private function loginTryCountClear()
+  protected function loginTryCountClear()
   {
     $this->loginTryCountSet(0);
   }
@@ -248,7 +248,7 @@ abstract class cLogonContext extends cContext
     return $lResult;
   }
 
-  private function writeToSession()
+  protected function writeToSession()
   {
     $_SESSION['isLogged']   = $this->isLogged;
     $_SESSION['logonLevel'] = $this->logonLevel;

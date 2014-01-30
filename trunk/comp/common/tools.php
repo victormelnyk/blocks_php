@@ -289,10 +289,9 @@ function paramPostGetSessionGetCheck($aName, $aType, &$aValue)
 //!exception
 function messageLog($aMessage)
 {
-  return;//!!test it
   $lFlp ='logs/'.gmdate('Y').'/'.gmdate('Ym').'/'.gmdate('Ymd').'/'.
     gmdate('YmdHis').'.log';
-  $lData = dateStrGet().' : '.$aMessage.CRLF;
+  $lData = gmdate('YmdHis').' : '.$aMessage.CRLF;
 
   stringToFileExt($lData, $lFlp, True, 'a');
 }
