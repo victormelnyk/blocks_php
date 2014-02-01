@@ -178,7 +178,7 @@ abstract class cLogonContext extends cContext
       else
         return COMPARE_TYPE_EQUAL;
     else
-    if ($lFirstValueIndex > $lSecondValueIndex)
+    if ($lFirstValueIndex < $lSecondValueIndex)
       return COMPARE_TYPE_GREATER;
     else
       return COMPARE_TYPE_LESS;
