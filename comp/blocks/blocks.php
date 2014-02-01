@@ -763,7 +763,8 @@ abstract class cMetaData
 
 class cSet extends cMetaData
 {
-  private $appNames = array();
+  public $appNames = array();
+  public $setNames = array();//!! cashe
 
   public $title = '';
   public $meta = '';
@@ -843,8 +844,10 @@ class cSet extends cMetaData
   {
     $lNames = $this->nameFullExplode($aSetNameFull, 2);
     $lAppName = $lNames[0];
+    $lSetName = $lNames[1];
     $this->appNames[$lAppName] = $lAppName;
-    $lWorkDir = $this->workDirBuild($lAppName, $lNames[1]);
+    $this->setNames[$lSetName] = $lSetName;
+    $lWorkDir = $this->workDirBuild($lAppName, $lSetName);
 
     $lXmlDocument = $this->configCheck($lWorkDir, 'Set');
 
@@ -1207,7 +1210,10 @@ class cPage extends cMetaData
       $this->loadFromCache($this->cache->data['page']);
     else
     {
-      $this->initMtInternal($this->appName.'.'.$this->set->name.'.'.$this->name);
+      foreach ($this->set->appNames as $lAppName)
+        foreach ($this->set->setNames as $lSetName)
+          $this->initMtInternal($lAppName.'.'.$lSetName.'.'.$this->name);
+
       $this->initMtInternal('blocks.sys.page');
       $this->configRead();
     }
@@ -1217,7 +1223,7 @@ class cPage extends cMetaData
     $this->blocksAdd();
   }
 
-  private function initMtInternal($aPageNameFull)
+  private function initMtInternal($aPageNameFull)//!!split params
   {
     $lNames = $this->nameFullExplode($aPageNameFull, 3);
 
