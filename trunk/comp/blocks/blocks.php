@@ -832,22 +832,19 @@ class cSet extends cMetaData
       $this->loadFromCache($this->cache->data['set']);
     else
     {
-      $this->initMtInternal($this->appName.'.'.$this->name);
-      $this->initMtInternal('blocks.sys');
+      $this->initMtInternal($this->appName, $this->name);
+      $this->initMtInternal('blocks', 'sys');
       $this->configRead();
     }
 
     $this->settingsReadProcess();
   }
 
-  private function initMtInternal($aSetNameFull)
+  private function initMtInternal($aAppName, $aSetName)
   {
-    $lNames = $this->nameFullExplode($aSetNameFull, 2);
-    $lAppName = $lNames[0];
-    $lSetName = $lNames[1];
-    $this->appNames[$lAppName] = $lAppName;
-    $this->setNames[$lSetName] = $lSetName;
-    $lWorkDir = $this->workDirBuild($lAppName, $lSetName);
+    $this->appNames[$aAppName] = $aAppName;
+    $this->setNames[$aSetName] = $aSetName;
+    $lWorkDir = $this->workDirBuild($aAppName, $aSetName);
 
     $lXmlDocument = $this->configCheck($lWorkDir, 'Set');
 
@@ -857,7 +854,10 @@ class cSet extends cMetaData
     $lInheritedParams = $this->inheritedParamsGet($lXmlDocument);
 
     for ($i = 0, $l = count($lInheritedParams); $i < $l; $i++)
-      $this->initMtInternal($lInheritedParams[$i]);
+    {
+      $lNames = $this->nameFullExplode($lInheritedParams[$i], 2);
+      $this->initMtInternal($lNames[0], $lNames[1]);
+    }
   }
 
   protected function loadFromCache(array $aCacheData)
@@ -1212,9 +1212,9 @@ class cPage extends cMetaData
     {
       foreach ($this->set->appNames as $lAppName)
         foreach ($this->set->setNames as $lSetName)
-          $this->initMtInternal($lAppName.'.'.$lSetName.'.'.$this->name);
+          $this->initMtInternal($lAppName, $lSetName, $this->name);
 
-      $this->initMtInternal('blocks.sys.page');
+      $this->initMtInternal('blocks', 'sys', 'page');
       $this->configRead();
     }
 
@@ -1223,11 +1223,9 @@ class cPage extends cMetaData
     $this->blocksAdd();
   }
 
-  private function initMtInternal($aPageNameFull)//!!split params
+  private function initMtInternal($aAppName, $aSetName, $aPageName)
   {
-    $lNames = $this->nameFullExplode($aPageNameFull, 3);
-
-    $lWorkDir = $this->workDirBuild($lNames[0], $lNames[1], $lNames[2]);
+    $lWorkDir = $this->workDirBuild($aAppName, $aSetName, $aPageName);
 
     $lXmlDocument = $this->configCheck($lWorkDir, 'Page');
 
@@ -1237,7 +1235,10 @@ class cPage extends cMetaData
     $lInheritedParams = $this->inheritedParamsGet($lXmlDocument);
 
     for ($i = 0, $l = count($lInheritedParams); $i < $l; $i++)
-      $this->initMtInternal($lInheritedParams[$i]);
+    {
+      $lNames = $this->nameFullExplode($lInheritedParams[$i], 3);
+      $this->initMtInternal($lNames[0], $lNames[1], $lNames[2]);
+    }
   }
 
   public static function instanceCreate($aSetNameFull)
