@@ -280,9 +280,15 @@ class cFilterOptionRange extends cFilterOptionBase
     if ($this->type == VAR_TYPE_DATE)
     {
       $lValue = $lAttr->getByType(VAR_TYPE_STRING);
-      if ($lValue == 'today')
-      {
+
+      switch ($lValue) {
+      case 'today':
         $aValue = gmdate('Y-m-d');
+        return true;
+      case 'first day of this month':
+        $lDate = new DateTime('NOW', new DateTimeZone("UTC"));
+        $lDate->modify('first day of this month');
+        $aValue = $lDate->format('Y-m-d');;
         return true;
       }
     }

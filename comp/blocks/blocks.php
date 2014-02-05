@@ -1304,7 +1304,7 @@ class cPage extends cMetaData
     else
     {
       if ($this->settings->isTest)
-        $this->initScriptAdd('if (!window.page) page = {}; page.isTestMode = true;');//!!
+        $this->initScriptAdd('if (window.page) page.isTestMode = true;');
 
       $lResult = $this->build();
     }
