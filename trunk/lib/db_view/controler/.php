@@ -131,21 +131,19 @@ class cFilterOptionEqual extends cFilterOptionBase
       return;
 
     if ($this->sqlTemplate)
-    {
       $aSqlList[] = sprintf($this->sqlTemplate, ' :'.$this->name);
-      $aParams[$this->name] = $this->value;
-    }
     else
     if ($this->type == VAR_TYPE_STRING)
-    {
       $aSqlList[] = $this->sqlSource.' LIKE :'.$this->name;
-      $aParams[$this->name] = '%'.$this->value.'%';
-    }
     else
-    {
       $aSqlList[] = $this->sqlSource.' = :'.$this->name;
+
+    if ($this->type == VAR_TYPE_STRING)
+      $aParams[$this->name] = '%'.$this->value.'%';
+    if ($this->type == VAR_TYPE_BOOLEAN)
+      $aParams[$this->name] = $this->value ? 1 : 0;
+    else
       $aParams[$this->name] = $this->value;
-    }
   }
 
   public function loadFromXml($aXmlNode)
