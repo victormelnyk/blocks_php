@@ -65,7 +65,7 @@ page.cLogin = function()
     }
 
     var
-      lRequest = $.get(
+      lRequest = $.post(
         document.location.pathname + '?' + 'user_logout=true',
         lOnComplete,
         'json'
