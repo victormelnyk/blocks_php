@@ -163,12 +163,19 @@ page.cBlockProcessor = function()
         page.errorRaise('Invalid Response format: "' + aResponse + '"');
     }
 
-    function lOnError(aResponse)
+    function lOnError(aError)
     {
-      aOnErrorFunc(aResponse.responseText);
+      if (aOnErrorFunc)
+        aOnErrorFunc(aError);
+      else
+        page.errorRaise(aError);
     }
 
-    $.post(aUrl, aParams, lOnSuccess, 'json').fail(lOnError);
+    $.post(aUrl, aParams, lOnSuccess, 'json').fail(
+      function(aResponse)
+      {
+        lOnError(aResponse.responseText);
+      });
   }
 
   function requestSendBlocks(aUrl, aBlockParams, aOnSuccessFunc, aOnErrorFunc)
