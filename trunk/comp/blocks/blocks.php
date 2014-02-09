@@ -1594,6 +1594,10 @@ abstract class cBlock extends cMetaData
 
   public function initScriptsGetRecursive(array &$aInitScripts)
   {
+    if ($this->isBuildOnRequest &&
+      !$this->page->params->blocks->exist($this->name))
+      return;
+
     if ($this->initScript)
       $aInitScripts[] = $this->initScript;
 
