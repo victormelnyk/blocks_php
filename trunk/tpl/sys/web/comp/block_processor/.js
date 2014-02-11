@@ -171,7 +171,7 @@ page.cBlockProcessor = function()
         page.errorRaise(aResponse.responseText);
     }
 
-    $.post(aUrl, aParams, lOnSuccess, 'json').fail(lOnError));
+    $.post(aUrl, aParams, lOnSuccess, 'json').fail(lOnError);
   }
 
   function requestSendBlocks(aUrl, aBlockParams, aOnSuccessFunc, aOnErrorFunc)
