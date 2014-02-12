@@ -14,7 +14,7 @@ class cBlocks_Auth_Controler extends cBlocks_DbView_Controler
   protected function init()
   {
     if ($this->settings->context->isLogged)
-      return parent::init();
+      parent::init();
   }
 }
 ?>
