@@ -155,7 +155,7 @@ page.cBlockProcessor = function()
         lResponse = eval(aResponse);
 
       if (lResponse.error)
-        aOnErrorFunc(lResponse.error);
+        lOnError(lResponse.error);
       else
       if (aResponse.blocks)
         aOnSuccessFunc(aResponse.blocks)
@@ -163,15 +163,19 @@ page.cBlockProcessor = function()
         page.errorRaise('Invalid Response format: "' + aResponse + '"');
     }
 
-    function lOnError(aResponse)
+    function lOnError(aError)
     {
       if (aOnErrorFunc)
-        aOnErrorFunc(aResponse.responseText);
+        aOnErrorFunc(aError);
       else
-        page.errorRaise(aResponse.responseText);
+        page.errorRaise(aError);
     }
 
-    $.post(aUrl, aParams, lOnSuccess, 'json').fail(lOnError);
+    $.post(aUrl, aParams, lOnSuccess, 'json').fail(
+      function(aResponse)
+      {
+        lOnError(aResponse.responseText);
+      });
   }
 
   function requestSendBlocks(aUrl, aBlockParams, aOnSuccessFunc, aOnErrorFunc)
@@ -231,16 +235,8 @@ page.cPageBlockProcessor = function()
         aOnSuccessFunc(aBlocks);
     }
 
-    function lOnError(aError)
-    {
-      if (aOnErrorFunc)
-        aOnErrorFunc(aError);
-      else
-        page.errorRaise(aError);
-    }
-
     fBlockProcessor.requestSendBlocks(aUrl || window.location.href,
-      aBlockParams, lOnSuccess, lOnError);
+      aBlockParams, lOnSuccess, aOnErrorFunc);
   }
 
   return _constructor();
