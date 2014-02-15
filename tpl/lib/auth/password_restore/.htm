@@ -1,28 +1,18 @@
-<div id="password_restore">
 <?
 if ($status)
 {
 ?>
-  New password was sent.
+  <~ml|Success~>
 <?
 }
 else
 {
   $lIsLoginError = ($errorType == 'login');
-  if ($lIsLoginError)
-    p('User is undefined.');
-  else
-  if ($errorType == 'error')
-  {
-    p('Something wrong.');
-    return;
-  }
 ?>
 <br>
-<form name="registerForm" onsubmit="return page.passwordRestore.submitCheck(this)">
-  <div id="password_restore-email_label"
-    class="<?p($lIsLoginError ? 'form-label_error' : 'form-label');?>">
-    <label>Login</label>
+<form method="POST">
+  <div style="color: <?p($lIsLoginError ? 'red' : 'black')?>">
+    <label><~ml|LoginLabel~></label>
   </div>
   <div>
     <input class="<?p($lIsLoginError ? 'form-input_error' : 'form-input');?>"
@@ -31,10 +21,9 @@ else
   </div>
   <br clear="both">
   <div align="center">
-    <input type="submit" value="Restore" title="Restore"/>
+    <input type="submit" value="<~ml|BtnRestore~>"/>
   </div>
 </form>
 <?
 }
 ?>
-</div>

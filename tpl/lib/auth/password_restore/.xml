@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Block>
+  <Inherited/>
+  <Localization>
+    <Tags>
+      <BtnRestore>
+        <en>Restore</en>
+        <uk>Відновити</uk>
+        <ru>Востановить</ru>
+      </BtnRestore>
+      <Error>
+        <en>Can not change your password, please contact administrator</en>
+        <uk>Неможливо змінити пароль, будь ласка, зв'яжіться з адміністратором</uk>
+        <ru>Невозможно изменить пароль, пожалуйста, свяжитесь с администратором</ru>
+      </Error>
+      <LoginError>
+        <en>Such user does not exists</en>
+        <uk>Користовач з таким логіном не існує</uk>
+        <ru>Пользователя с таким логином не существует</ru>
+      </LoginError>
+      <LoginLabel>
+        <en>Login</en>
+        <uk>Логін</uk>
+        <ru>Логин</ru>
+      </LoginLabel>
+      <ReportTitle>
+        <en>You have send request for new password</en>
+        <uk>Ви відправили запит на відновлення пароля</uk>
+        <ru>Ви отправили запрос на востановление пароля</ru>
+      </ReportTitle>
+      <Report>
+        <en>You new password</en>
+        <uk>Ваш новий пароль</uk>
+        <ru>Ваш новий пароль</ru>
+      </Report>
+      <Success>
+        <en>Password successfully changed, check you email</en>
+        <uk>Пароль успішно змінено, перевірте ваш email</uk>
+        <ru>Пароль успешно изменён, проверьте ваш email</ru>
+      </Success>
+      <Title>
+        <en>Password restore</en>
+        <uk>Відновлення паролю</uk>
+        <ru>Востановление пароля</ru>
+      </Title>
+    </Tags>
+  </Localization>
+</Block>

@@ -31,11 +31,17 @@ abstract class cBlocks_Auth_PasswordRestore extends cBlock
 
   abstract protected function mailSend($aLogin, $aPasswordNew, $aReportHtml);//!!$aLogin <> email
 
-  abstract protected function onParamsCheckError();
+  protected function onError($aErrorType)
+  {
+    $this->initScriptAdd('page.logger.error("'.
+      $this->localizationTagValueGet($aErrorType).'")');
+  }
 
-  abstract protected function onPasswordUpdateError();
-
-  abstract protected function onSuccess();
+  protected function onSuccess()
+  {
+    $this->initScriptAdd('page.logger.log("'.
+      $this->localizationTagValueGet('Success').'")');
+  }
 
   private function paramsReadCheck(&$aUserId, &$aLogin)
   {
@@ -43,8 +49,8 @@ abstract class cBlocks_Auth_PasswordRestore extends cBlock
 
     if ($lResult && !$this->userIdGetCheck($aLogin, $aUserId))
     {
-      $this->errorType = 'login';
-      $this->onParamsCheckError();
+      $this->errorType = 'LoginError';
+      $this->onError($this->errorType);
       return false;
     }
 
@@ -77,8 +83,8 @@ abstract class cBlocks_Auth_PasswordRestore extends cBlock
     catch (Exception $e)
     {
       $this->db->rollbackTran();
-      $this->errorType = 'error';
-      $this->onPasswordUpdateError();
+      $this->errorType = 'Error';
+      $this->onError($this->errorType);
     }
     $this->onSuccess();
   }
