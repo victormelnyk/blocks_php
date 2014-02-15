@@ -26,8 +26,11 @@ abstract class cBlocks_Auth_SignUp extends cBlock
   {
     parent::init();
 
+    if ($_SERVER['REQUEST_METHOD'] == 'GET')
+      return;
+
     $this->db = $this->settings->db;
-    $this->status = $this->paramsReadCheck($this->errorType);
+    $this->status = $this->paramsReadCheckInternal($this->errorType);
     if (!$this->status)
       return;
 
@@ -61,45 +64,52 @@ abstract class cBlocks_Auth_SignUp extends cBlock
     $this->initScriptAdd('window.location.href = "'.$this->homePageGet().'"');
   }
 
-  private function paramsReadCheck(&$aErrorType)
+  private function paramsReadCheckInternal(&$aErrorType)
   {
+    $lCheckResult = $this->paramsReadCheck();
+
+    $this->params = $lCheckResult['params'];
+
+    $aErrorType = $lCheckResult['errorType'];
+
+    return $lCheckResult['status'];
+  }
+
+  protected function paramsReadCheck()
+  {
+    $lParams = array();
+    $lErrorType = '';
+
     $lReadedParamCount = 0;
-    if (paramPostGetGetCheck('login', VAR_TYPE_STRING, $this->params['login']))
+    if (paramPostGetCheck('login', VAR_TYPE_STRING, $lParams['login']))
       $lReadedParamCount++;
-    if (paramPostGetGetCheck('name', VAR_TYPE_STRING, $this->params['name']))
+    if (paramPostGetCheck('name', VAR_TYPE_STRING, $lParams['name']))
       $lReadedParamCount++;
-    if (paramPostGetGetCheck('password', VAR_TYPE_STRING,
-      $this->params['password']))
+    if (paramPostGetCheck('password', VAR_TYPE_STRING, $lParams['password']))
       $lReadedParamCount++;
-    if (paramPostGetGetCheck('password_confirm', VAR_TYPE_STRING,
-      $this->params['password_confirm']))
+    if (paramPostGetCheck('password_confirm', VAR_TYPE_STRING, $lParams['password_confirm']))
       $lReadedParamCount++;
 
-    if ($lReadedParamCount != 4)
+    $lStatus = $lReadedParamCount == 4;
+
+    if ($lStatus)
     {
-      if ($lReadedParamCount > 0)
+      if ($lParams['password'] != $lParams['password_confirm'])
       {
-        $aErrorType = 'Params';
-        $this->onError($aErrorType);
+        $lErrorType = 'PasswordConfirmError';
+        $this->onError($lErrorType);
+        $lStatus = false;
       }
-      return false;
+
+      if ($lStatus && $this->loginExist($lParams['login']))
+      {
+        $lErrorType = 'LoginError';
+        $this->onError($lErrorType);
+        $lStatus = false;
+      }
     }
 
-    if ($this->params['password'] != $this->params['password_confirm'])
-    {
-      $aErrorType = 'PasswordConfirmError';
-      $this->onError($aErrorType);
-      return false;
-    }
-
-    if ($this->loginExist($this->params['login']))
-    {
-      $aErrorType = 'LoginError';
-      $this->onError($aErrorType);
-      return false;
-    }
-
-    return true;
+    return array('status' => $lStatus, 'params' => $lParams, 'errorType' => $lErrorType);
   }
 
   abstract protected function userSave(array $aParams);
