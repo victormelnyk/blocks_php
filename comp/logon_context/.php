@@ -94,7 +94,7 @@ abstract class cLogonContext extends cContext
           $lRequestCreator)
         && ($lRequestCreator == 'XMLHttpRequest')))//!! to AK need test
         header('Location: '.($aRedirectTo ? $aRedirectTo
-          : arrayValueGet($_SERVER, 'PHP_SELF')));
+          : arrayValueGet($_SERVER, 'REQUEST_URI')));
      /*!! to AK need test
       for AJAX
       [HTTP_X_REQUESTED_WITH] => XMLHttpRequest
