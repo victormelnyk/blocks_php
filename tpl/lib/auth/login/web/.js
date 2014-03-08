@@ -23,7 +23,6 @@ page.cLogin = function()
 
     function lOnSuccessFunc()
     {
-      $(aForm).attr('action', document.location.href);
       aForm.submit();
     }
 
