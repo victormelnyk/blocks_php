@@ -27,7 +27,10 @@ abstract class cBlocks_Auth_SignUp extends cBlock
     parent::init();
 
     if ($_SERVER['REQUEST_METHOD'] == 'GET')
+    {
+      $this->paramsReadCheckInternal($lErrorType);
       return;
+    }
 
     $this->db = $this->settings->db;
     $this->status = $this->paramsReadCheckInternal($this->errorType);
