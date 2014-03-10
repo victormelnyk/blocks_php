@@ -19,6 +19,7 @@
 class cPageSettings
 {
   public $rootDir = '';
+  public $rootRunDir = '';
 
   public $db      = null;
   public $context = null;
@@ -35,29 +36,8 @@ class cPageSettings
     session_start();
   }
 
-  public function log($aMessage)
+  public function init()
   {
-    $lFlp = $this->rootDir.'tmp/logs/'.gmdate('YmdHis').'.log';//!! add app name
-    $lData = gmdate('YmdHis').' : '.$aMessage.CRLF;
-    stringToFileExt($lData, $lFlp, True, 'a');
-  }
-
-  /*!! check
-    $this->rootDir = arrayValueGetTyped($aPageParams, 'rootDir',
-      VAR_TYPE_STRING);
-
-    $this->runDir = $this->rootDir.substr(dirname($_SERVER['SCRIPT_NAME']), 1).
-      '/';
-
-    if (!arrayValueGetCheckTyped($aPageParams, 'cacheDir', VAR_TYPE_STRING,
-      $this->cacheDir))
-      $this->cacheDir = 'cache/';
-
-    $this->db = isset($aPageParams['db']) ? $aPageParams['db'] : null;
-
-    arrayValueGetCheckTyped($aPageParams, 'isTest', VAR_TYPE_BOOLEAN,
-      $this->isTest);
-
     if ($this->isTest)
     {
       if (!paramPostGetSessionGetCheck('is_cache', VAR_TYPE_BOOLEAN,
@@ -69,23 +49,27 @@ class cPageSettings
 
       if ($this->isProfile)
       {
-        require_once($this->rootDir.'blocks/components/helpers/profiler/.php');
+        require_once($this->rootDir.'blocks/comp/helpers/profiler/.php');
         cPFHelper::init($this->rootDir);
       }
     }
 
-    if (arrayValueGetCheckTyped($aPageParams, 'onErrorFunction',
-      VAR_TYPE_STRING, $this->onErrorFunction))
+    if ($this->onErrorFunction)
       eAssert(function_exists($this->onErrorFunction),
         'onErrorFunction with name: "'.$this->onErrorFunction.'" do not exsist');
 
-    if (arrayValueGetCheckTyped($aPageParams, 'onTemplateErrorFunction',
-      VAR_TYPE_STRING, $this->onTemplateErrorFunction))
+    if ($this->onTemplateErrorFunction)
       eAssert(function_exists($this->onTemplateErrorFunction),
         'onTemplateErrorFunction with name: "'.$this->onTemplateErrorFunction.
         '" do not exsist');
   }
-  */
+
+  public function log($aMessage)
+  {
+    $lFlp = $this->rootDir.'tmp/logs/'.gmdate('YmdHis').'.log';//!! add app name
+    $lData = gmdate('YmdHis').' : '.$aMessage.CRLF;
+    stringToFileExt($lData, $lFlp, True, 'a');
+  }
 }
 
 class cCache
@@ -589,27 +573,33 @@ abstract class cMetaData
     return $lResult;
   }
 
-  public function runDirGet($aRunDirName)
+  public function runDirGet($aRunDir)
   {
-    $lParams = explode('.', $aRunDirName);
+    $lParams = explode('.', $aRunDir);//!!'.' wrong delimiter
     $lIsAbsolute = false;
 
     switch (count($lParams)) {
     case 1:
-      $aRunDirName = $lParams[0];
+      $lRunDirName = $lParams[0];
       break;
     case 2:
-      $aRunDirName = $lParams[0];
-      eAssert($lParams[1] == 'host', 'Not supported param ' + $lParams[1]);//!!check
+      $lRunDirName = $lParams[0];
+      eAssert($lParams[1] == 'host', 'Not supported param '.$lParams[1]);
       $lIsAbsolute = true;
       break;
     default:
-      throw new Exception('Wrong RunDirName: "'.$aRunDirName.'"');
+      throw new Exception('Wrong RunDirName: "'.$aRunDir.'"');
     }
 
-    return ($lIsAbsolute ? $_SERVER['HTTP_HOST'].'/'.
-      str_replace('../', '', $this->settings->rootDir) : $this->settings->rootDir).
-      ($aRunDirName ? $this->page->set->runDirs[$aRunDirName] : '');
+    $lResult = $this->settings->rootDir.
+      ($lRunDirName ? $this->settings->rootRunDir.
+        (isset($this->page->set->runDirs[$lRunDirName])
+          ? $this->page->set->runDirs[$lRunDirName] : $lRunDirName.'/') : '');
+
+    if ($lIsAbsolute)
+      $lResult = $this->urlHostAdd($lResult, true);
+
+    return $lResult;
   }
 
   public function saveToCache(array &$aCacheData)
@@ -713,6 +703,9 @@ abstract class cMetaData
           case 'Tag':
             $lValues[] = $this->tags->getByN($lTagParam);
             break;
+          case 'Host':
+            $lValues[] = $this->urlHostAdd($lTagParam, false);
+            break;
           default:
             throw new Exception('Not suported tag: "'.$lTag.'"');
           }
@@ -748,6 +741,11 @@ abstract class cMetaData
       else
         $aStyles->add($lFlp, $this->fileDataGet($lFlp, false));
     }
+  }
+
+  public function urlHostAdd($aUrl, $aIsAddSlash) {
+    return $_SERVER['HTTP_HOST'].($aIsAddSlash ? '/' : '').
+      str_replace('../', '', $aUrl);
   }
 
   abstract public function workDirByLevelGet($aLevelName);
@@ -951,6 +949,7 @@ class cPage extends cMetaData
     $lSetName = $lNames[1];
     $lPageName = basename($_SERVER['SCRIPT_NAME'], '.php');
     $lSettings = self::settingsGet();
+    $lSettings->init();
 
     $lCache = new cCache($lSettings->rootDir.$lAppName.'/tmp/cache/'.
       $lSetName.'/'.$lPageName.'/', $lSettings->isCache);
@@ -1188,8 +1187,8 @@ class cPage extends cMetaData
   public function fileFlpByLevelGet($aLevelFlp)
   {
     $lLevel = $this->nameByLevelExplode($aLevelFlp, $lFlp);
-    switch ($lLevel)
-    {
+
+    switch ($lLevel) {
     case self::LEVEL_SET:
       return $this->set->fileFirstExistFlpGet($lFlp);
     case self::LEVEL_PAGE:
@@ -1383,8 +1382,7 @@ class cPage extends cMetaData
 
   public function workDirByLevelGet($aLevelName)
   {
-    switch ($this->nameByLevelExplode($aLevelName, $lName))
-    {
+    switch ($this->nameByLevelExplode($aLevelName, $lName)) {
     case self::LEVEL_SET:
       if ($lName == '')
       {
