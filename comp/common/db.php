@@ -44,7 +44,7 @@ abstract class cDbBase
 
   private function executeInternal($aSql, array $aParams)
   {
-    if (cPage::settingsGet()->isProfile)
+    if (cPage::settingsGet()->isProfile)//!!delete using cPage
       cPFHelper::sqlProfile($this, $aSql, $aParams);
 
     $lStatement = $this->pdo->prepare($aSql);
