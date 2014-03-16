@@ -58,7 +58,10 @@ abstract class cLogonContext extends cContext
     if (paramPostGetGetCheck('user_logout', VAR_TYPE_STRING, $lIsLogOut))
     {
       if ($lIsLogOut)
+      {
         $this->clear();
+        header('Location: '. arrayValueGet($_SERVER, 'PHP_SELF'));
+      }
     }
     else
     if (paramSessionGetCheck('isLogged', VAR_TYPE_BOOLEAN, $lIsLogged))

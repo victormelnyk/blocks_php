@@ -28,7 +28,7 @@ abstract class cBlocks_Auth_SignUp extends cBlock
 
     if ($_SERVER['REQUEST_METHOD'] == 'GET')
     {
-      $this->paramsReadCheckInternal($lErrorType);
+      $this->paramsReadCheckInternal($lTempErrorType); //! $lTempErrorType - used only to call function
       return;
     }
 
