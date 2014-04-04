@@ -357,8 +357,9 @@ class cFilterOptionEntry extends cFilterOptionBase
 class cFilter extends cOptionsBase
 {
   //!FILTER_IS_EMPTY
-  const FILTER_IS_EMPTY_NONE = 'none';
+  const FILTER_IS_EMPTY_NONE  = 'none';
   const FILTER_IS_EMPTY_EMPTY = 'empty';
+  const FILTER_IS_EMPTY_ALL   = 'all';
   //!FILTER_OPTION_TYPE
   const FILTER_OPTION_TYPE_EQUAL = 'Equal';
   const FILTER_OPTION_TYPE_RANGE = 'Range';
@@ -436,17 +437,19 @@ class cFilter extends cOptionsBase
         $lIsEmpty = true;
     }
 
-    if ($lIsEmpty)
-      switch ($this->filterIsEmpty) {
-      case self::FILTER_IS_EMPTY_NONE:
-        break;
-      case self::FILTER_IS_EMPTY_EMPTY:
-        $this->isEmpty = true;
-        break;
-      default:
-        throw new Exception('Not suported FilterIsEmpty value: "'.
-          $this->filterIsEmpty.'"');
-      }
+    switch ($this->filterIsEmpty) {
+    case self::FILTER_IS_EMPTY_NONE:
+      break;
+    case self::FILTER_IS_EMPTY_EMPTY:
+      $this->isEmpty = $lIsEmpty;
+      break;
+    case self::FILTER_IS_EMPTY_ALL:
+      $this->isEmpty = !$lIsEmpty;
+      break;
+    default:
+      throw new Exception('Not suported FilterIsEmpty value: "'.
+        $this->filterIsEmpty.'"');
+    }
   }
 
   public function sqlAndParamsGet(&$aParams)
