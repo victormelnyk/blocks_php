@@ -648,7 +648,7 @@ abstract class cMetaData
     }
   }
 
-  private function stringTagsProcess($aString, array $aTagsValues)
+  protected function stringTagsProcess($aString, array $aTagsValues)
   {
     $lResult = $aString;
     $lResult = htmlspecialchars_decode($aString);//!!fix and delete
