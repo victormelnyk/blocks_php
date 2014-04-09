@@ -28,10 +28,7 @@ class cFormOption extends cOptionBase
       $this->isRequired = $lAttr->getB();
 
     if ($aXmlNode->attrs->nextGetCheckByN('DefaultValue', $lAttr))
-    {
-      $this->value = $lAttr->getByType($this->type);
-      $this->isValueExist = true;
-    }
+      $this->valueSetDirect($lAttr->getByType($this->type));
   }
 
   public function paramsRead()
@@ -43,10 +40,7 @@ class cFormOption extends cOptionBase
       $this->isValueExist = $lIsValueExist;
 
     if (!$this->isValueExist && ($this->inputType == INPUT_TYPE_CHECKBOX))
-    {
-      $this->value = false;
-      $this->isValueExist = true;
-    }
+      $this->valueSetDirect(false);
   }
 
   public function paramsValidCheck()
@@ -67,7 +61,12 @@ class cFormOption extends cOptionBase
 
   public function valueSet($aValue)
   {
-    $this->value = valueByType($aValue, $this->type);
+    $this->valueSetDirect(valueByType($aValue, $this->type));
+  }
+
+  public function valueSetDirect($aValue)
+  {
+    $this->value = $aValue;
     $this->isValueExist = true;
   }
 }

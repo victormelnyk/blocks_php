@@ -11,13 +11,13 @@ class cBootstrapTableHelper
   }
 
   public static function gridBuild($aRecordset, $aParams, $aFieldNames = array(),
-    $aFieldSizes = array())//!! grid -> table
+    $aFieldSizes = array(), $aTdClasses = array())//!! grid -> table
   {
     if (!count($aRecordset) && !count($aFieldNames))
       return '';
 
     return self::gridBuildByRows(
-      self::recordsetToRows($aRecordset),
+      self::recordsetToRows($aRecordset, $aTdClasses),
       (count($aFieldNames) ? $aFieldNames
         : self::recordsetFieldNamesGet($aRecordset, $aParams)),
       $aFieldSizes
@@ -82,21 +82,27 @@ class cBootstrapTableHelper
     return $lResult;
   }
 
-  public static function recordsetToRows($aRecordset)
+  public static function recordsetToRows($aRecordset, $aTdClasses = array())
   {
     $lResult = array();
 
     for ($i = 0, $l = count($aRecordset); $i < $l; $i++)
     {
+      $lFieldIndex = 0;
       $lRow = '<tr>';
-
       $lRecord = $aRecordset[$i];
+
       foreach ($lRecord as $lName => $lCell)
-        if ($lName != 'key_params')
-          $lRow .= '<td>'.$lCell.'</td>';
+      {
+        if ($lName == 'key_params')
+          continue;
+
+        $lRow .= '<td'.((isset($aTdClasses[$lFieldIndex]) && $aTdClasses[$lFieldIndex])
+          ? ' class="'.$aTdClasses[$lFieldIndex].'"' : '').'>'.$lCell.'</td>';
+        $lFieldIndex++;
+      }
 
       $lRow .= '</tr>';
-
       $lResult[] = $lRow;
     }
 

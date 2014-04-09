@@ -653,15 +653,16 @@ abstract class cMetaData
     $lResult = $aString;
     $lResult = htmlspecialchars_decode($aString);//!!fix and delete
 
-    $lTags = tagsFind($lResult);
-    $lValues = array();
+    $lTagsAll = tagsFind($lResult);
 
-    for ($i = 0, $l = count($lTags); $i < $l; $i++)
+    $lTagsValues = array();
+
+    for ($i = 0, $l = count($lTagsAll); $i < $l; $i++)
     {
-      $lTag = $lTags[$i];
+      $lTag = $lTagsAll[$i];
 
       if (isset($aTagsValues[$lTag]))
-        $lValues[] = $aTagsValues[$lTag];
+        $lTagsValues[$lTag] = $aTagsValues[$lTag];
       else
       {
         $lTagArray = explode('|', $lTag);
@@ -672,14 +673,13 @@ abstract class cMetaData
 
           switch ($lTagKey) {
           case 'Language':
-            $lValues[] = $this->page->language;
+            $lTagsValues[$lTag] = $this->page->language;
             break;
           case 'Name':
-            $lValues[] = $this->name;
+            $lTagsValues[$lTag] = $this->name;
             break;
           default:
-            throw new Exception('Not suported tag: "'.$lTag.'"');
-            break;
+            //!!tags in settings throw new Exception('Not suported tag: "'.$lTag.'"');
           }
 
           break;
@@ -689,22 +689,22 @@ abstract class cMetaData
 
           switch ($lTagKey) {
           case 'fileFlpByLevelGet'://!!Capitalized
-            $lValues[] = $this->fileFlpByLevelGet($lTagParam);
+            $lTagsValues[$lTag] = $this->fileFlpByLevelGet($lTagParam);
             break;
           case 'workDirByLevelGet':
-            $lValues[] = $this->workDirByLevelGet($lTagParam);
+            $lTagsValues[$lTag] = $this->workDirByLevelGet($lTagParam);
             break;
           case 'runDirGet':
-            $lValues[] = $this->runDirGet($lTagParam);
+            $lTagsValues[$lTag] = $this->runDirGet($lTagParam);
             break;
           case 'ml':
-            $lValues[] = $this->localizationTagValueGet($lTagParam);
+            $lTagsValues[$lTag] = $this->localizationTagValueGet($lTagParam);
             break;
           case 'Tag':
-            $lValues[] = $this->tags->getByN($lTagParam);
+            $lTagsValues[$lTag] = $this->tags->getByN($lTagParam);
             break;
           case 'Host':
-            $lValues[] = $this->urlHostAdd($lTagParam, false);
+            $lTagsValues[$lTag] = $this->urlHostAdd($lTagParam, false);
             break;
           default:
             throw new Exception('Not suported tag: "'.$lTag.'"');
@@ -717,9 +717,8 @@ abstract class cMetaData
       }
     }
 
-    if (count($lTags))
-      $lResult = tagsReplace($lResult, $lTags, $lValues);
-
+    if (count($lTagsAll))
+      $lResult = tagsReplaceArray($lResult, $lTagsValues);
     return $lResult;
   }
 

@@ -60,9 +60,35 @@ class cDbForm extends cForm
 
   public $tableName = '';
 
-  protected function optionCreate($aXmlNode)
+  public function keyOptionsGet()
   {
-    return new cDbFormOption($this, $aXmlNode);
+    $lResult = array();
+
+    for ($i = 0, $l = $this->options->count(); $i < $l; $i++)
+    {
+      $lOption = $this->options->getByI($i);
+      if ($lOption->isKey)
+        $lResult[] = $lOption;
+    }
+
+    return $lResult;
+  }
+
+  function keyOptionsNamesValuesGet()
+  {
+    $lResult = array();
+
+    for ($i = 0, $l = $this->options->count(); $i < $l; $i++)
+    {
+      $lOption = $this->options->getByI($i);
+      if ($lOption->isKey)
+      {
+        eAssert($lOption->isValueValid, 'Value not valid');
+        $lResult[$lOption->name] = $lOption->value;
+      }
+    }
+
+    return $lResult;
   }
 
   public function loadFromXml($aXmlNode)
@@ -95,6 +121,11 @@ class cDbForm extends cForm
       if ($lOption->inputType == INPUT_TYPE_SELECT)
         $lOption->valueLoadFromDb($aDb, $lOption->value);
     }
+  }
+
+  protected function optionCreate($aXmlNode)
+  {
+    return new cDbFormOption($this, $aXmlNode);
   }
 
   public function paramsRead()
@@ -152,6 +183,9 @@ class cDbForm extends cForm
       if ($lOption->type == VAR_TYPE_BOOLEAN)
         $aSqlParams[$lOption->sqlField] = $lOption->value ? 'TRUE' : 'FALSE';//!!bag in PDO PG
       else
+      if ($lOption->inputType == INPUT_TYPE_FILE)
+        continue;
+      else
         $aSqlParams[$lOption->sqlField] = $lOption->value;
     }
 
@@ -160,17 +194,16 @@ class cDbForm extends cForm
 
   public function sqlKeysExist()
   {
-    $lResult = true;
-
     for ($i = 0, $l = $this->options->count(); $i < $l; $i++)
     {
       $lOption = $this->options->getByI($i);
       if ($lOption->isKey)
-        $lResult = $lOption->isValueExist
-          && ($lOption->value !== cDbBase::BAD_IDENTITY_ID) && $lResult;
+        if (!$lOption->isValueExist
+          || ($lOption->value === cDbBase::BAD_IDENTITY_ID))
+          return false;
     }
 
-    return $lResult;
+    return true;
   }
 
   private function sqlUpdateBuildAndParamGet(&$aSqlParams)
@@ -189,6 +222,8 @@ class cDbForm extends cForm
 
       if (($lOption->type == VAR_TYPE_BOOLEAN) && $lOption->isValueExist)
         $aSqlParams[$lOption->sqlField] = $lOption->value ? 'TRUE' : 'FALSE';//!!bag in PDO PG
+      if ($lOption->inputType == INPUT_TYPE_FILE)
+        continue;
       else
         $aSqlParams[$lOption->sqlField] =
           $lOption->isValueExist ? $lOption->value : null;

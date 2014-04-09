@@ -14,6 +14,7 @@ define('VAR_TYPE_TIME',     'Time');
 define('INPUT_TYPE_CHECKBOX', 'checkbox');
 define('INPUT_TYPE_DATE',     'date');
 define('INPUT_TYPE_DATETIME', 'datetime');
+define('INPUT_TYPE_FILE',     'file');
 define('INPUT_TYPE_SELECT',   'select');
 define('INPUT_TYPE_TEXT',     'text');
 define('INPUT_TYPE_TEXTAREA', 'textarea');
