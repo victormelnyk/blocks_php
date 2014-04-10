@@ -164,12 +164,12 @@ function fileToString($aFlp)
   return file_get_contents($aFlp);
 }
 
-function forceDir($aDir)
+function forceDir($aFlp, $aIgnoreLats = false)
 {
-  $lDirs = explode('/', $aDir);
+  $lDirs = explode('/', $aFlp);
   $lDir = '';
 
-  for ($i = 0, $l = count($lDirs); $i < $l; $i++)
+  for ($i = 0, $l = count($lDirs); $i < $l - ($aIgnoreLats ? 1 : 0); $i++)
   {
     $lSubDir = ($lDir ? $lDir.'/' : '').$lDirs[$i];
     if (file_exists($lSubDir) || mkdir($lSubDir))

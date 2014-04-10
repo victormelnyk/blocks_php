@@ -222,6 +222,7 @@ class cDbForm extends cForm
 
       if (($lOption->type == VAR_TYPE_BOOLEAN) && $lOption->isValueExist)
         $aSqlParams[$lOption->sqlField] = $lOption->value ? 'TRUE' : 'FALSE';//!!bag in PDO PG
+      else
       if ($lOption->inputType == INPUT_TYPE_FILE)
         continue;
       else
