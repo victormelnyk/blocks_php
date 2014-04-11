@@ -1,7 +1,7 @@
 <?php
 class cBlocks_Sys_Languages extends cBlock
 {
-  private $languages = array('uk', 'ru'); //!! we need languages list on app or set level
+  private $languages = array('uk', 'ru', 'en'); //!! we need languages list on app or set level
   private $languagesEx = array();
 
   public function build()
@@ -29,12 +29,13 @@ class cBlocks_Sys_Languages extends cBlock
     $lUrl .= 'l=';
     for($i = 0, $l = count($this->languages); $i < $l; $i++)
     {
-      $lLanguage = $this->languages[$i];
+      $lLanguageCode = $this->languages[$i];
 
       $this->languagesEx[] = array(
-        'code'     => $lLanguage,
-        'isActive' => ($lLanguage == $this->page->language),
-        'url'      => $lUrl.$lLanguage
+        'code'     => $lLanguageCode,
+        'isActive' => ($lLanguageCode == $this->page->language),
+        'url'      => $lUrl.$lLanguageCode,
+        'title'    => $this->tags->getByN('Title_' . $lLanguageCode)
       );
     }
   }
