@@ -15,9 +15,10 @@ class cBlocks_Sys_Languages extends cBlock
     parent::init();
 
     $lUrl = $_SERVER['PHP_SELF'].'?';
-    $lParams = array();/*!! do not work on real server
-    explode('&', count($_SERVER['argv']) ? $_SERVER['argv'][0] : '');
-    */
+    $lParams = explode('?', $_SERVER['REQUEST_URI']);
+    if (count($lParams) == 2)
+      $lParams = explode('&', $lParams[1]);
+
     for($i = 0, $l = count($lParams); $i < $l; $i++)
     {
       $lParam = $lParams[$i];
