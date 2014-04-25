@@ -12,6 +12,7 @@ define('VAR_TYPE_STRING',   'String');
 define('VAR_TYPE_TIME',     'Time');
 //!INPUT_TYPE
 define('INPUT_TYPE_CHECKBOX', 'checkbox');
+define('INPUT_TYPE_CODE',     'code');
 define('INPUT_TYPE_DATE',     'date');
 define('INPUT_TYPE_DATETIME', 'datetime');
 define('INPUT_TYPE_FILE',     'file');
