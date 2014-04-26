@@ -92,8 +92,7 @@ page.cMenuLinear = function(aBlockName, aSettings, aItemActiveIndex)
 
       if (i == aItemActiveIndex || lItem.attr('isActive'))
         lActiveItemRec = {
-          item:    lItem,
-          content: lItemContent
+          item: lItem
         };
 
       i++;
