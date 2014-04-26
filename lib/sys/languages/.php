@@ -18,6 +18,8 @@ class cBlocks_Sys_Languages extends cBlock
     $lParams = explode('?', $_SERVER['REQUEST_URI']);
     if (count($lParams) == 2)
       $lParams = explode('&', $lParams[1]);
+    else
+      $lParams = [];
 
     for($i = 0, $l = count($lParams); $i < $l; $i++)
     {
