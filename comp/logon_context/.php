@@ -14,7 +14,7 @@ abstract class cLogonContext extends cContext
   private $defaultLogonLevelPage = self::NO_LOGON_LEVEL;
   private $defaultLogonLevelSet  = self::NO_LOGON_LEVEL;
 
-  public $isTryToLogin  = false;
+  public $isTryToLogin   = false;
   private $loginTryCount = 0;
 
   public $isLogged   = false;
@@ -69,6 +69,15 @@ abstract class cLogonContext extends cContext
         $this->readFromSession();
   }
 
+  public function ipGet()
+  {
+    if (isset($_SERVER['HTTP_CLIENT_IP']))
+      return $_SERVER['HTTP_CLIENT_IP'];
+    if (isset($_SERVER['HTTP_X_FORWARDED_FOR']))
+      return $_SERVER['HTTP_X_FORWARDED_FOR'];
+    return  $_SERVER['REMOTE_ADDR'];
+  }
+
   public function isLoggedGet($aLogonLevel)
   {
     if (($aLogonLevel == self::NO_LOGON_LEVEL)
@@ -112,7 +121,7 @@ abstract class cLogonContext extends cContext
       $this->clear();
   }
 
-  private function loginParamsReadCheck(&$aUserLogin, &$aUserPassword)
+  protected function loginParamsReadCheck(&$aUserLogin, &$aUserPassword)
   {
     return paramPostGetGetCheck('user_login', VAR_TYPE_STRING, $aUserLogin)
       && paramPostGetGetCheck('user_password', VAR_TYPE_STRING, $aUserPassword);//!! use object params
@@ -222,7 +231,7 @@ abstract class cLogonContext extends cContext
 
   abstract protected function readFromDb($aUserLogin, $aUserPassword);//! to override
 
-  private function readFromSession()
+  protected function readFromSession()
   {
     $this->logonLevel = paramSessionGet('logonLevel', VAR_TYPE_STRING);
     $this->userId     = paramSessionGet('userId',     VAR_TYPE_INTEGER);

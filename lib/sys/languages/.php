@@ -19,7 +19,7 @@ class cBlocks_Sys_Languages extends cBlock
     if (count($lParams) == 2)
       $lParams = explode('&', $lParams[1]);
     else
-      $lParams = [];
+      $lParams = array();
 
     for($i = 0, $l = count($lParams); $i < $l; $i++)
     {
