@@ -224,8 +224,8 @@ abstract class cMetaData
 
   public $defaultLanguage = '';
   public $filesByMl = array(); //!! ->LocalizationFiles
-  public $tagsMl = Null;
-  public $tags = Null;
+  public $tagsMl = null;
+  public $tags = null;
 
   public $initScript = '';
   public $workDirs   = array();
