@@ -1,4 +1,4 @@
-page.cLogin = function()
+page.cLogin = function(aRequiredFiledNames)
 {
   var
     self = this;
@@ -8,6 +8,10 @@ page.cLogin = function()
     self.login  = login;
     self.logout = logout;
 
+    self.onSubmit = null;
+
+    self.highLightFunc = null;
+
     return self;
   }
 
@@ -15,14 +19,30 @@ page.cLogin = function()
   {
     function lFieldHighlight(aFormElement, aIsValid)
     {
-      /*!!
-      aFormElement.className =
-        (aIsValid ? 'form-input ' : 'form-input_error ') + 'login-input';
-     */
+      //!! make this code common highlight logic
+      if (self.highLightFunc)
+        self.highLightFunc(aFormElement, aIsValid);
+
+      var
+        lElement = $(aFormElement),
+        lBorder  = aIsValid ? '' : lElement.css('border'),
+        lRestoreFunc = function()
+        {
+          lElement.css('border', lBorder);
+        };
+
+      if (aIsValid)
+        lRestoreFunc();
+      else
+        lElement.css('border', '1px solid red').one('click', lRestoreFunc)
+          .one('focus', lRestoreFunc);
     }
 
     function lOnSuccessFunc()
     {
+      if (self.onSubmit)
+        self.onSubmit();
+
       aForm.submit();
     }
 
@@ -43,7 +63,7 @@ page.cLogin = function()
     var
       lFormChecker = new page.cFormChecker(),
       lFieldName = '',
-      lRequiredFiledNames = ['user_login', 'user_password'],
+      lRequiredFiledNames = aRequiredFiledNames ? aRequiredFiledNames : ['user_login', 'user_password'],
       lLabelElement;
 
     for(var i = 0, l = lRequiredFiledNames.length; i < l; i++)
