@@ -17,6 +17,8 @@ abstract class cLogonContext extends cContext
   public $isTryToLogin   = false;
   private $loginTryCount = 0;
 
+  protected $homePage = '';
+
   public $isLogged   = false;
   public $logonLevel = self::NO_LOGON_LEVEL;
   public $userId     = 0;
@@ -50,10 +52,10 @@ abstract class cLogonContext extends cContext
     return $lLogonLevel;
   }
 
-  private function init()
+  protected function init()
   {
     if ($this->loginParamsReadCheck($lUserLogin, $lUserPassword))
-      $this->login($lUserLogin, $lUserPassword, '');
+      $this->login($lUserLogin, $lUserPassword, $this->homePage);
     else
     if (paramPostGetGetCheck('user_logout', VAR_TYPE_STRING, $lIsLogOut))
     {
