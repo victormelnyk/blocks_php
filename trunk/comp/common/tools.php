@@ -3,7 +3,7 @@
 define('CRLF', "\r\n");
 //!Enums
 //!VAR_TYPE
-define('VAR_TYPE_BOOLEAN',  'Boolean');
+define('VAR_TYPE_BOOLEAN',  'Boolean');//!!VAR_TYPE_BOOLEAN -> VT_BOOLEAN
 define('VAR_TYPE_DATE',     'Date');
 define('VAR_TYPE_DATETIME', 'DateTime');
 define('VAR_TYPE_FLOAT',    'Float');
