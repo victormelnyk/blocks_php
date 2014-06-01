@@ -31,6 +31,8 @@ class cPageSettings
   public $onErrorFunction = '';
   public $onTemplateErrorFunction = '';
 
+  public $defaultLanguage = '';
+
   public function __construct()
   {
     session_start();
@@ -222,7 +224,7 @@ abstract class cMetaData
   protected $scripts = null;
   protected $styles  = null;
 
-  public $defaultLanguage = '';
+  public $defaultLanguage = '';//!!move to app level
   public $filesByMl = array(); //!! ->LocalizationFiles
   public $tagsMl = null;
   public $tags = null;
@@ -950,17 +952,18 @@ class cPage extends cMetaData
     $lSettings = self::settingsGet();
     $lSettings->init();
 
-    $lCache = new cCache($lSettings->rootDir.$lAppName.'/tmp/cache/'.
-      $lSetName.'/'.$lPageName.'/', $lSettings->isCache);
-
-    $this->set = new cSet($lAppName, $lSetName, $this, $lCache, $lSettings);
-    $this->set->initMt();
-
     if (paramPostGetGetCheck('l', VAR_TYPE_STRING, $this->language))//!!use params logic
       $_SESSION['language'] = $this->language;
     else
     if (!paramSessionGetCheck('language', VAR_TYPE_STRING, $this->language))
-      $this->language = $this->set->defaultLanguage;
+      $this->language = $lSettings->defaultLanguage;
+
+    $lCache = new cCache($lSettings->rootDir.$lAppName.'/tmp/cache/'.
+      $lSetName.'/'.$lPageName.'/'.($this->language ? $this->language.'/' : ''),
+      $lSettings->isCache);
+
+    $this->set = new cSet($lAppName, $lSetName, $this, $lCache, $lSettings);
+    $this->set->initMt();
 
     parent::__construct($lAppName, $lPageName, $this, $lCache, $lSettings);
 
