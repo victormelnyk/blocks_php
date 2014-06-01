@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Block>
   <Inherited/>
+  <Localization/>
   <Scripts>
     <_i-Script>s:web/comp/form_checker/.js</_i-Script>
   </Scripts>

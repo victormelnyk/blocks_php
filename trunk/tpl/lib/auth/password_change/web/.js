@@ -29,14 +29,14 @@ page.cPasswordChange = function(aBlockName, aRequiredFiledNames, aIsHasLabels, a
       if (aIsValid)
       {
         if (aLabelElement)
-          aLabelElement.className = 'form-label';
-        aFormElement.className = 'form-input';
+          $(aLabelElement).removeClass('form-label_error');
+        $(aFormElement).removeClass('form-input');
       }
       else
       {
         if (aLabelElement)
-          aLabelElement.className = 'form-label_error';
-        aFormElement.className = 'form-input_error';
+          $(aLabelElement).addClass('form-label_error');
+        $(aFormElement).addClass('form-input_error');
       }
     }
 
