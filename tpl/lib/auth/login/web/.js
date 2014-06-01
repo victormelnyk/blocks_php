@@ -15,7 +15,7 @@ page.cLogin = function(aRequiredFiledNames)
     return self;
   }
 
-  function login(aForm)
+  function login(aForm, aEvent)
   {
     function lFieldHighlight(aFormElement, aIsValid)
     {
@@ -59,6 +59,8 @@ page.cLogin = function(aRequiredFiledNames)
 
       page.logger.warn('<~ml|Error~>');
     }
+
+    $.Event(aEvent).preventDefault();
 
     var
       lFormChecker = new page.cFormChecker(),
