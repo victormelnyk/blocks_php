@@ -57,7 +57,7 @@ abstract class cBlocks_Auth_PasswordRestore extends cBlock
     return $lResult;
   }
 
-  private function passwordRestore($aUserId, $aLogin)
+  protected function passwordRestore($aUserId, $aEmail)
   {
     $lPasswordNew = cCryptHelper::randomStringGenerate(6);
     $lRandomPart = cCryptHelper::dynamicRandomPartGenerate();
@@ -74,11 +74,13 @@ abstract class cBlocks_Auth_PasswordRestore extends cBlock
     {
       $this->passwordUpdate($aUserId, $lParams);
 
-      $this->mailSend($aLogin, $lPasswordNew, $this->templateProcess(
+      $this->mailSend($aEmail, $lPasswordNew, $this->templateProcess(
         $this->fileFirstExistDataGet('report.htm'),
         array('passwordNew' => $lPasswordNew)));
 
       $this->db->commitTran();
+
+      $this->onSuccess();
     }
     catch (Exception $e)
     {
@@ -86,11 +88,10 @@ abstract class cBlocks_Auth_PasswordRestore extends cBlock
       $this->errorType = 'Error';
       $this->onError($this->errorType);
     }
-    $this->onSuccess();
   }
 
   abstract protected function passwordUpdate($aUserId, $aParams);
 
-  abstract protected function userIdGetCheck($aLogin, &$aUserId);
+  abstract protected function userIdGetCheck($aEmail, &$aUserId);
 }
 ?>
