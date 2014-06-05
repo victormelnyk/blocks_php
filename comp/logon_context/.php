@@ -60,15 +60,13 @@ abstract class cLogonContext extends cContext
     if (paramPostGetGetCheck('user_logout', VAR_TYPE_STRING, $lIsLogOut))
     {
       if ($lIsLogOut)
-      {
-        $this->clear();
-        header('Location: '. arrayValueGet($_SERVER, 'PHP_SELF'));
-      }
+        $this->logOut();
     }
     else
-    if (paramSessionGetCheck('isLogged', VAR_TYPE_BOOLEAN, $lIsLogged))
-      if ($lIsLogged)
-        $this->readFromSession();
+    if (paramSessionGetCheck($this->page->appName.'_isLogged', VAR_TYPE_BOOLEAN,
+        $lIsLogged) && $lIsLogged
+    )
+      $this->readFromSession();
   }
 
   public function ipGet()
@@ -207,6 +205,14 @@ abstract class cLogonContext extends cContext
     }
   }
 
+  public function logOut()
+  {
+    $this->clear();
+    header('Location: '.($this->homePage ? $this->homePage
+      : arrayValueGet($_SERVER, 'PHP_SELF'))
+    );
+  }
+
   public function toArray()
   {
     return array(
@@ -261,7 +267,8 @@ abstract class cLogonContext extends cContext
 
   protected function writeToSession()
   {
-    $_SESSION['isLogged']   = $this->isLogged;
+    $_SESSION[$this->page->appName.'_isLogged'] = $this->isLogged;
+
     $_SESSION['logonLevel'] = $this->logonLevel;
     $_SESSION['userId']     = $this->userId;
     $_SESSION['userLogin']  = $this->userLogin;
