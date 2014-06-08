@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Block>
   <Inherited/>
-  <Localization/>
+  <Localization>
+    <Tags>
+      <Title>
+        <en>Password change</en>
+        <uk>Зміна паролю</uk>
+        <ru>Изминение пароля</ru>
+      </Title>
+    </Tags>
+  </Localization>
   <Scripts>
     <_i-Script>s:web/comp/form_checker/.js</_i-Script>
   </Scripts>
