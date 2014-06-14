@@ -140,6 +140,7 @@ class cFilterOptionEqual extends cFilterOptionBase
 
     if ($this->type == VAR_TYPE_STRING)
       $aParams[$this->name] = '%'.$this->value.'%';
+    else
     if ($this->type == VAR_TYPE_BOOLEAN)
       $aParams[$this->name] = $this->value ? 1 : 0;
     else

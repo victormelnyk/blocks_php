@@ -25,6 +25,8 @@ abstract class cLogonContext extends cContext
   public $userLogin  = '';
   public $userName   = '';
 
+  public $pageLogonLevel = self::NO_LOGON_LEVEL;
+
   public function clear()
   {
     $this->isLogged   = false;
@@ -78,7 +80,7 @@ abstract class cLogonContext extends cContext
     return  $_SERVER['REMOTE_ADDR'];
   }
 
-  public function isLoggedGet($aLogonLevel)
+  public function isLoggedGet($aLogonLevel)//!!->LogonLevelCheck
   {
     if (($aLogonLevel == self::NO_LOGON_LEVEL)
       || ($aLogonLevel == self::LOGON_LEVEL_ALL)
@@ -251,13 +253,13 @@ abstract class cLogonContext extends cContext
   public function validate()
   {
     if ($this->defaultLogonLevelPage == self::NO_LOGON_LEVEL)//!! move to isLoggedGet
-      $lLogonLevel = $this->defaultLogonLevelSet;
+      $this->pageLogonLevel = $this->defaultLogonLevelSet;
     else
-      $lLogonLevel = $this->defaultLogonLevelPage;
+      $this->pageLogonLevel = $this->defaultLogonLevelPage;
 
     $this->init();
 
-    $lResult = $this->isLoggedGet($lLogonLevel);
+    $lResult = $this->isLoggedGet($this->pageLogonLevel);
 
     if (!$lResult)
       $this->loginPageShow();
