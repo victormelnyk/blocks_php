@@ -53,6 +53,11 @@
         <uk>Вітаємо Вас</uk>
         <ru>Приветствуем Вас</ru>
       </Welcome>
+      <Title>
+        <en>SignUp</en>
+        <uk>Реєстрація</uk>
+        <ru>Регистрация</ru>
+      </Title>
     </Tags>
   </Localization>
   <Scripts>
