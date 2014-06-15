@@ -133,14 +133,8 @@ class cFilterOptionEqual extends cFilterOptionBase
     if ($this->sqlTemplate)
       $aSqlList[] = sprintf($this->sqlTemplate, ' :'.$this->name);
     else
-    if ($this->type == VAR_TYPE_STRING)
-      $aSqlList[] = $this->sqlSource.' LIKE :'.$this->name;
-    else
       $aSqlList[] = $this->sqlSource.' = :'.$this->name;
 
-    if ($this->type == VAR_TYPE_STRING)
-      $aParams[$this->name] = '%'.$this->value.'%';
-    else
     if ($this->type == VAR_TYPE_BOOLEAN)
       $aParams[$this->name] = $this->value ? 1 : 0;
     else
