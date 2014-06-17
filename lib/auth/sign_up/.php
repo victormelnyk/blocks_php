@@ -46,11 +46,12 @@ abstract class cBlocks_Auth_SignUp extends cBlock
     catch (Exception $e)
     {
       $this->db->rollbackTran();
+      $this->status = false;
       $this->errorType = 'Error';
+      $this->onError($this->errorType);
+      throw $e;//!!
     }
 
-    $this->settings->context->login($this->params['login'],
-      $this->params['password'], $this->homePageGet());
     $this->onSuccess();
   }
 
@@ -62,8 +63,10 @@ abstract class cBlocks_Auth_SignUp extends cBlock
       $this->localizationTagValueGet($aErrorType).'")');
   }
 
-  protected function onSuccess()
+  protected function onSuccess()//!!redirect on server
   {
+    $this->settings->context->login($this->params['login'],
+      $this->params['password'], $this->homePageGet());
     $this->initScriptAdd('window.location.href = "'.$this->homePageGet().'"');
   }
 
@@ -83,17 +86,7 @@ abstract class cBlocks_Auth_SignUp extends cBlock
     $lParams = array();
     $lErrorType = '';
 
-    $lReadedParamCount = 0;
-    if (paramPostGetCheck('login', VAR_TYPE_STRING, $lParams['login']))
-      $lReadedParamCount++;
-    if (paramPostGetCheck('name', VAR_TYPE_STRING, $lParams['name']))
-      $lReadedParamCount++;
-    if (paramPostGetCheck('password', VAR_TYPE_STRING, $lParams['password']))
-      $lReadedParamCount++;
-    if (paramPostGetCheck('password_confirm', VAR_TYPE_STRING, $lParams['password_confirm']))
-      $lReadedParamCount++;
-
-    $lStatus = $lReadedParamCount == 4;
+    $lStatus = $this->paramsReadInternal($lParams);
 
     if ($lStatus)
     {
@@ -111,10 +104,31 @@ abstract class cBlocks_Auth_SignUp extends cBlock
         $lStatus = false;
       }
     }
+    else
+      $lErrorType = 'ParamsError';
 
-    return array('status' => $lStatus, 'params' => $lParams, 'errorType' => $lErrorType);
+    return array(
+      'status'    => $lStatus,
+      'params'    => $lParams,
+      'errorType' => $lErrorType
+    );
+  }
+
+  protected function paramsReadInternal(array &$lParams)
+  {
+    $lResult = paramPostGetCheck('login', VAR_TYPE_STRING, $lParams['login']);
+    $lResult = paramPostGetCheck('name', VAR_TYPE_STRING, $lParams['name'])
+      AND $lResult;
+    $lResult = paramPostGetCheck('password', VAR_TYPE_STRING,
+      $lParams['password']) AND $lResult;
+    $lResult = paramPostGetCheck('password_confirm', VAR_TYPE_STRING,
+      $lParams['password_confirm']) AND $lResult;
+
+    return $lResult;
   }
 
   abstract protected function userSave(array $aParams);
 }
+
+
 ?>
