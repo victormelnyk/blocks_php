@@ -64,9 +64,9 @@ function valueByType($aValue, $aVarType)
   switch ($aVarType) {
   case VAR_TYPE_BOOLEAN:
     switch ($aValue) {
-    case 'true': case '1':
+    case 'true': case '1': case 'on':
       return true;
-    case 'false': case '0':
+    case 'false': case '0': case '':
       return false;
     default:
       throw new Exception('Not supported boolean value: "'.$aValue.'"'.
