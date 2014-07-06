@@ -524,6 +524,8 @@ abstract class cMetaData
     $this->fileFlps     = $aCacheData['fileFlps'];
     $this->fileFlpsList = $aCacheData['fileFlpsList'];
     $this->initScript   = $aCacheData['initScript'];
+    $this->tagsMl->loadFromString($aCacheData['tagsMl']);
+    $this->tags->loadFromString($aCacheData['tags']);
 
     if (isset($aCacheData['settingsXml']))
     {
@@ -610,6 +612,8 @@ abstract class cMetaData
     $aCacheData['fileFlps']     = $this->fileFlps;
     $aCacheData['fileFlpsList'] = $this->fileFlpsList;
     $aCacheData['initScript']   = $this->initScript;
+    $aCacheData['tagsMl'] = $this->tagsMl->saveToString();
+    $aCacheData['tags'] = $this->tags->saveToString();
 
     if ($this->settingsXmlNode)
       $aCacheData['settingsXml'] = $this->settingsXmlNode->saveToString();

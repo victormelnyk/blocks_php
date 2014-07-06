@@ -2,17 +2,15 @@
 //!!$aLogin -> $aUserLogin
 abstract class cBlocks_Auth_PasswordRestore extends cBlock
 {
-  private $errorType = '';
-  private $status = false;
+  protected $errorType = '';
+  protected $status = false;
 
   protected $db = null;
 
   public function build()
   {
-    //!for cache
-    if (!$this->cache->isValid)
+    if (!$this->cache->isValid)//!for cache
       $this->fileFirstExistDataGet('report.htm');
-
     return $this->templateProcess($this->fileFirstExistDataGet('.htm'),
       array(
         'status'    => $this->status,
@@ -22,8 +20,14 @@ abstract class cBlocks_Auth_PasswordRestore extends cBlock
 
   public function init()
   {
-    $lLogin = '';
+    parent::init();
     $this->db = $this->settings->db;
+    $this->initInternal();
+  }
+
+  protected function initInternal()
+  {
+    $lLogin = '';
     $this->status = $this->paramsReadCheck($lUserId, $lLogin);
     if ($this->status)
       $this->passwordRestore($lUserId, $lLogin);

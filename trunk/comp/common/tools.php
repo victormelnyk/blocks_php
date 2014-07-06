@@ -64,9 +64,9 @@ function valueByType($aValue, $aVarType)
   switch ($aVarType) {
   case VAR_TYPE_BOOLEAN:
     switch ($aValue) {
-    case 'true': case '1': case 'on':
+    case 'true': case '1':
       return true;
-    case 'false': case '0': case '':
+    case 'false': case '0':
       return false;
     default:
       throw new Exception('Not supported boolean value: "'.$aValue.'"'.
@@ -478,6 +478,13 @@ class cNamedList
     $this->items = $lItems;
   }
 
+  public function loadFromString($aValue)
+  {
+    $lItems = unserialize($aValue);
+    foreach ($lItems as $lName => $lValue)
+      $this->add($lName, $lValue);
+  }
+
   public function toArray()
   {
     $lResult = array();
@@ -486,6 +493,11 @@ class cNamedList
       $lResult[$lName] = $lValue;
 
     return $lResult;
+  }
+
+  public function saveToString()
+  {
+    return serialize($this->items);
   }
 
   public function valuesToSectionString($aDelimiter)
