@@ -118,17 +118,15 @@ abstract class cBlocks_Auth_SignUp extends cBlock
   {
     $lResult = paramPostGetCheck('login', VAR_TYPE_STRING, $lParams['login']);
     $lResult = paramPostGetCheck('name', VAR_TYPE_STRING, $lParams['name'])
-      AND $lResult;
+      && $lResult;
     $lResult = paramPostGetCheck('password', VAR_TYPE_STRING,
-      $lParams['password']) AND $lResult;
+      $lParams['password']) && $lResult;
     $lResult = paramPostGetCheck('password_confirm', VAR_TYPE_STRING,
-      $lParams['password_confirm']) AND $lResult;
+      $lParams['password_confirm']) && $lResult;
 
     return $lResult;
   }
 
   abstract protected function userSave(array $aParams);
 }
-
-
 ?>
