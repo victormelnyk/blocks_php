@@ -513,7 +513,7 @@ abstract class cMetaData
     return $lResult;
   }
 
-  protected function initScriptAdd($aInitScript)
+  public function initScriptAdd($aInitScript)
   {
     $this->initScript .= ($this->initScript ? CRLF : '').$aInitScript;
   }
@@ -542,7 +542,7 @@ abstract class cMetaData
       return false;
   }
 
-  protected function localizationTagValueGet($aTagName)
+  public function localizationTagValueGet($aTagName)
   {
     if ($this->localizationTagValueGetCheck($aTagName, $this->page->language,
       $lValue))
@@ -1131,7 +1131,7 @@ class cPage extends cMetaData
 
   private function buildStyles()
   {
-    $lStyles = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
+    $lStyles = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_NONE);//!!
     $lNotCollectedStyles = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
 
     $this->set->stylesDefaultGet($lStyles);
