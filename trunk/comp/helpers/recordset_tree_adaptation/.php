@@ -12,7 +12,7 @@ class  cRecordsetTreeAdaptationItem
   }
 
   public function addToRecordset(&$aRecordset, $aLevel, $aIndex, $aFullIndex,
-    $aIsLast)
+    $aIsLast) //!!$aIsLast -> count - one item close two level
   {
     $lChildrenCount = count($this->children);
 
