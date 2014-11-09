@@ -235,7 +235,7 @@ class cFilterOptionRange extends cFilterOptionBase
         ' :'.$this->name.self::SUFFIX_TO);
 
       $aParams[$this->name.self::SUFFIX_FROM] = $this->valueFrom;
-      $aParams[$this->name.self::SUFFIX_TO]   = $this->valueToFrom;
+      $aParams[$this->name.self::SUFFIX_TO]   = $this->valueTo;
     }
     else
     {
@@ -281,9 +281,20 @@ class cFilterOptionRange extends cFilterOptionBase
       case 'first day of this month':
         $lDate = new DateTime('NOW', new DateTimeZone("UTC"));
         $lDate->modify('first day of this month');
-        $aValue = $lDate->format('Y-m-d');;
+        $aValue = $lDate->format('Y-m-d ');
         return true;
       }
+    }
+    else//!!case
+    if ($this->type == VAR_TYPE_DATETIME)
+    {
+      $lValue = $lAttr->getByType(VAR_TYPE_STRING);
+
+      $lDate = new DateTime('NOW', new DateTimeZone("UTC"));
+      $lDate->modify($lValue);
+      $aValue = $lDate->format('Y-m-d H:i:s');
+
+      return true;
     }
 
     $aValue = $lAttr->getByType($this->type);
