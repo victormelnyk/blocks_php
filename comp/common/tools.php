@@ -1,398 +1,278 @@
 <?php
 //!consts
 define('CRLF', "\r\n");
-//!Enums
+//!enums
 //!VAR_TYPE
-define('VAR_TYPE_BOOLEAN',  'Boolean');//!!VAR_TYPE_BOOLEAN -> VT_BOOLEAN
-define('VAR_TYPE_DATE',     'Date');
-define('VAR_TYPE_DATETIME', 'DateTime');
-define('VAR_TYPE_FLOAT',    'Float');
-define('VAR_TYPE_INTEGER',  'Integer');
-define('VAR_TYPE_STRING',   'String');
-define('VAR_TYPE_TIME',     'Time');
-//!INPUT_TYPE
-define('INPUT_TYPE_CHECKBOX', 'checkbox');
-define('INPUT_TYPE_CODE',     'code');
-define('INPUT_TYPE_DATE',     'date');
-define('INPUT_TYPE_DATETIME', 'datetime');
-define('INPUT_TYPE_FILE',     'file');
-define('INPUT_TYPE_SELECT',   'select');
-define('INPUT_TYPE_TEXT',     'text');
-define('INPUT_TYPE_TEXTAREA', 'textarea');
-define('INPUT_TYPE_TIME',     'time');
+define('V_BOOLEAN',  'Boolean');
+define('V_DATE',     'Date');
+define('V_DATETIME', 'DateTime');
+define('V_FLOAT',    'Float');
+define('V_INTEGER',  'Integer');
+define('V_INTERVAL', 'Interval');
+define('V_STRING',   'String');
+define('V_TIME',     'Time');
 
 //!functions
 //!common
-function p($aValue)
-{
-  echo $aValue;
+function p($value) {
+  echo $value;
 }
 //!exception
-function eAssert($aCondition, $aMessage = 'Assert')
-{
-  if (!$aCondition)
-    throw new Exception($aMessage);
+function eAssert($condition, $message = 'Assert') {
+  if (!$condition) {
+    throw new Exception($message);
+  }
 }
 
-function notSupportedRaise($aMessage, $aValue)
-{
-  throw new Exception('Not supported'.
-    $aMessage.($aValue ? ': "' : '').$aValue.($aValue ? '"': ''));
+function raiseNotSupported($message, $value) {
+  throw new Exception('Not supported '. $message .
+    ($value ? ': "' . $value . '"' : ''));
 }
 //!varType
-function varTypeCheckAssert($aVarType)
-{
-  switch ($aVarType) {
-  case VAR_TYPE_BOOLEAN:
-  case VAR_TYPE_DATE:
-  case VAR_TYPE_DATETIME:
-  case VAR_TYPE_FLOAT:
-  case VAR_TYPE_INTEGER:
-  case VAR_TYPE_STRING:
-  case VAR_TYPE_TIME:
-    return true;
-  default:
-    throw new Exception('Not supported VarType: "'.$aVarType.'"');
+function varTypeCheckAssert($varType) {
+  switch ($varType) {
+    case V_BOOLEAN:
+    case V_DATE:
+    case V_DATETIME:
+    case V_FLOAT:
+    case V_INTEGER:
+    case V_STRING:
+    case V_TIME:
+      return true;
+    default:
+      raiseNotSupported('VarType', $varType);
   }
 }
 
-function valueByType($aValue, $aVarType)
-{
-  if (is_null($aValue))
+function valueByType($value, $varType) {
+  if (is_null($value)) {
     return null;
+  }
 
-  switch ($aVarType) {
-  case VAR_TYPE_BOOLEAN:
-    switch ($aValue) {
-    case 'true': case '1':
-      return true;
-    case 'false': case '0':
-      return false;
+  switch ($varType) {
+    case V_BOOLEAN:
+      switch ($value) {
+        case 'true':
+        case '1':
+          return true;
+        case 'false':
+        case '0':
+          return false;
+        default:
+          raiseNotSupported('Boolean value must be "true" or "false"', $value);
+      }
+    case V_DATE:
+    case V_DATETIME:
+    case V_TIME:
+      $dateTime = new DateTime($value, new DateTimeZone('UTC'));
+      if (!$dateTime) {
+        throw new Exception('Can not convert value: "' . $value . '" to DateTime');
+      }
+
+      switch ($varType) {
+        case V_DATE:
+          $format = 'Y-m-d';
+          break;
+        case V_DATETIME:
+          $format = 'Y-m-d H:i:s';
+          break;
+        case V_TIME:
+          $format = 'H:i:s';
+          break;
+        default:
+          raiseNotSupported('Date VarType', $varType);
+      }
+
+      return $dateTime->format($format);
+    case V_FLOAT:
+      return (float) $value;
+    case V_INTEGER:
+      return (int) $value;
+    case V_STRING:
+      return $value;
+    case V_INTERVAL:
+      return $value;
     default:
-      throw new Exception('Not supported boolean value: "'.$aValue.'"'.
-        ' must be "true" or "false"');
-    }
-  case VAR_TYPE_DATE:
-  {
-    $lDateTime = new DateTime($aValue, new DateTimeZone('GMT'));
-    if (!$lDateTime)
-      throw new Exception('Can not convert value: "'.$aValue.'"'.' to DateTime');
-    return $lDateTime->format('Y-m-d');
+      throw new Exception('Not supported VarType: "'.$varType.'"');
   }
-  case VAR_TYPE_DATETIME:
-  {
-    $lDateTime = new DateTime($aValue, new DateTimeZone('GMT'));
-    if (!$lDateTime)
-      throw new Exception('Can not convert value: "'.$aValue.'"'.' to DateTime');
-    return $lDateTime->format('Y-m-d H:i:s');
-  }
-  case VAR_TYPE_FLOAT:
-    return (float)$aValue;
-  case VAR_TYPE_INTEGER:
-    return (int)$aValue;
-  case VAR_TYPE_STRING:
-    return $aValue;
-  case VAR_TYPE_TIME:
-  {
-    /*!! not work for 2 days 10:00:00
-    $lDateTime = new DateTime($aValue, new DateTimeZone('GMT'));
-    if (!$lDateTime)
-      throw new Exception('Can not convert value: "'.$aValue.'"'.' to Time');
-    return $lDateTime->format('H:i:s');
-    */
-    return $aValue;
-  }
-  default:
-    throw new Exception('Not supported VarType: "'.$aVarType.'"');
-  }
-  throw new Exception('Can not convert value: "'.$aValue.
-    '" to VarType: "'.$aVarType.'"');
+  raiseNotSupported('VarType', $varType);
 }
 //!string
-function mb_trim($aStr)
-{
-  return preg_replace('/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $aStr);
+function mb_trim($str) {
+  return preg_replace('/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $str);
 }
 
-function strToCapitalize($aStr)
-{
-  $lParts = explode('_', $aStr);
-
-  for ($i = 0, $l = count($lParts); $i < $l; $i++)
-    $lParts[$i] = ucfirst($lParts[$i]);
-
-  return implode('', $lParts);
+function strToCapitalize($str) {
+  $parts = explode('_', $str);
+  for ($i = 0; $i < count($parts); $i++) {
+    $parts[$i] = ucfirst($parts[$i]);
+  }
+  return implode('', $parts);
 }
 //!array
-function arrayValueGet($aArray, $aKey)
-{
-  if (array_key_exists($aKey, $aArray))
-    return $aArray[$aKey];
-  else
-    throw new Exception('Value by key "'.$aKey.'" is undefined');
-}
-
-function arrayValueGetTyped($aArray, $aKey, $aType)
-{
-  return valueByType(arrayValueGet($aArray, $aKey), $aType);
-}
-
-function arrayValueGetCheck($aArray, $aKey, &$aValue)
-{
-  $lResult = array_key_exists($aKey, $aArray);
-  if ($lResult)
-  {
-    $lValue = $aArray[$aKey];
-    $lResult = ($lResult && $lValue !== '');//!! ''
-    if ($lResult)
-      $aValue = $lValue;
+function getArrayValue($array, $key) {
+  if (array_key_exists($key, $array)) {
+    return $array[$key];
+  } else {
+    throw new Exception('Value by key "' . $key . '" is undefined');
   }
-  return $lResult;
 }
 
-function arrayValueGetCheckTyped($aArray, $aKey, $aType, &$aValue)
-{
-  $lResult = arrayValueGetCheck($aArray, $aKey, $lValue);
-  if ($lResult)
-    $aValue = valueByType($lValue, $aType);
-  return $lResult;
+function getArrayValueTyped($array, $key, $type) {
+  return valueByType(getArrayValue($array, $key), $type);
+}
+
+function getCheckArrayValue($array, $key, &$value) {
+  $result = array_key_exists($key, $array);
+  if ($result) {
+    $valueLocal = $array[$key];
+    $result = $valueLocal !== '';
+    if ($result) {
+      $value = $valueLocal;
+    }
+  }
+  return $result;
+}
+
+function getCheckArrayValueTyped($array, $key, $type, &$value) {
+  $result = getCheckArrayValue($array, $key, $value);
+  if ($result) {
+    $value = valueByType($value, $type);
+  }
+  return $result;
 }
 //!files
-function fileToString($aFlp)
-{
-  if (!file_exists($aFlp))
-    throw new Exception('File not exist by file name: "'.$aFlp.'"');
-  return file_get_contents($aFlp);
+function fileToString($filePath) {
+  if (!file_exists($filePath)) {
+    throw new Exception('File not exist by file name: "' . $filePath . '"');
+  }
+  return file_get_contents($filePath);
 }
 
-function forceDir($aFlp, $aIgnoreLats = false)
-{
-  $lDirs = explode('/', $aFlp);
-  $lDir = '';
+function forceDir($filePath, $ignoreLats = false) {
+  $dirs = explode('/', $filePath);
+  $dir = '';
 
-  for ($i = 0, $l = count($lDirs); $i < $l - ($aIgnoreLats ? 1 : 0); $i++)
-  {
-    $lSubDir = ($lDir ? $lDir.'/' : '').$lDirs[$i];
-    if (file_exists($lSubDir) || mkdir($lSubDir))
-      $lDir = $lSubDir;
-    else
-      throw new Exception('Can not create dir "'.$lSubDir.'"');
+  for ($i = 0; $i < count($dirs) - ($ignoreLats ? 1 : 0); $i++) {
+    $lSubDir = ($dir ? $dir . '/' : '') . $dirs[$i];
+    if (file_exists($lSubDir) || mkdir($lSubDir)) {
+      $dir = $lSubDir;
+    } else {
+      throw new Exception('Can not create dir "' . $lSubDir . '"');
+    }
   }
 }
 
-function removeDir($aDir, $isRemoveRoot = true)
-{
-  if(!file_exists($aDir) || !is_dir($aDir))
-    throw new Exception('Dir not exist: "'.$aDir.'"');
+function removeDir($dir, $isRemoveRoot = true) {
+  if (!file_exists($dir) || !is_dir($dir)) {
+    throw new Exception('Dir not exist: "' . $dir . '"');
+  }
 
-  $aDirHandle = opendir($aDir);
+  $dirHandle = opendir($dir);
 
-  while (false !== ($lFln = readdir($aDirHandle)))
-  {
-    if ($lFln == '.' || $lFln == '..')
+  while (false !== ($pathPart = readdir($dirHandle))) {//!!not clear
+    if ($pathPart === '.' || $pathPart === '..')
       continue;
 
-    $lFlp = $aDir.$lFln;
-    //!!chmod($lFlp, 0777);
+    $path = $dir . $pathPart;
 
-    if (is_dir($lFlp))
-      removeDir($lFlp.'/');
-    else
-    if(file_exists($lFlp))
-      unlink($lFlp);
+    if (is_dir($path)) {
+      removeDir($path.'/');
+    } else if (file_exists($path)) {
+      unlink($path);
+    }
   }
 
-  closedir($aDirHandle);
+  closedir($dirHandle);
 
   if ($isRemoveRoot)
-    rmdir($aDir);
+    rmdir($dir);
 }
 
-function stringToFile($aData, $aFlp)
-{
-  stringToFileExt($aData, $aFlp, True, 'w');
+function stringToFile($data, $filePath) {
+  stringToFileExt($data, $filePath, True, 'w');
 }
 
-function stringToFileExt($aData, $aFlp, $aIsForceDir, $aMode)
-{
-  if ($aIsForceDir)
-  {
-    $lPathinfo = pathinfo($aFlp);
-    forceDir($lPathinfo['dirname']);
+function stringToFileExt($data, $filePath, $forceDir, $mode) {
+  if ($forceDir) {
+    $pathInfo = pathinfo($filePath);
+    forceDir($pathInfo['dirname']);
   }
 
-  $lFile = fopen($aFlp, $aMode);
+  $file = fopen($filePath, $mode);
 
-  if (!$lFile)
-    throw new Exception('Can not open file "'.$aFlp.'"');
+  if (!$file) {
+    throw new Exception('Can not open file "' . $filePath . '"');
+  }
 
-  if (!fwrite($lFile, $aData))
-    throw new Exception('Can not write to file "'.$lFlp.'"');
+  if (!fwrite($file, $data)) {
+    throw new Exception('Can not write to file "' . $$filePath . '"');
+  }
 
-  if ($lFile)
-    fclose($lFile);
-}
-//!param
-function paramGetGet($aParamName, $aType)
-{
-  return arrayValueGetTyped($_GET, $aParamName, $aType);
-}
-
-function paramPostGet($aParamName, $aType)
-{
-  return arrayValueGetTyped($_POST, $aParamName, $aType);
-}
-
-function paramPostGetGet($aParamName, $aType)
-{
-  return ($_SERVER['REQUEST_METHOD'] == 'POST')
-    ? paramPostGet($aParamName, $aType)
-    : paramGetGet($aParamName, $aType);
-}
-
-function paramSessionGet($aName, $aType)
-{
-  return arrayValueGetTyped($_SESSION, $aName, $aType);
-}
-
-function paramSessionGetCheck($aName, $aType, &$aValue)
-{
-  return arrayValueGetCheckTyped($_SESSION, $aName, $aType, $aValue);
-}
-
-function paramGetGetCheck($aName, $aType, &$aValue)
-{
-  return arrayValueGetCheckTyped($_GET, $aName, $aType, $aValue);
-}
-
-function paramPostGetCheck($aName, $aType, &$aValue)
-{
-  return arrayValueGetCheckTyped($_POST, $aName, $aType, $aValue);
-}
-
-function paramPostGetGetCheck($aName, $aType, &$aValue)
-{
-  return (($_SERVER['REQUEST_METHOD'] == 'POST')
-    ? paramPostGetCheck($aName, $aType, $aValue)
-    : paramGetGetCheck($aName, $aType, $aValue));
-}
-
-function paramPostGetSessionGetCheck($aName, $aType, &$aValue)
-{
-  $lResult = paramPostGetGetCheck($aName, $aType, $aValue);
-
-  if ($lResult)
-    $_SESSION[$aName] = $aValue;
-  else
-    $lResult = paramSessionGetCheck($aName, $aType, $aValue);
-
-  return $lResult;
-}
-//!exception
-function messageLog($aMessage)
-{
-  $lFlp ='logs/'.gmdate('Y').'/'.gmdate('Ym').'/'.gmdate('Ymd').'/'.
-    gmdate('YmdHis').'.log';
-  $lData = gmdate('YmdHis').' : '.$aMessage.CRLF;
-
-  stringToFileExt($lData, $lFlp, True, 'a');
-}
-
-function exceptionToString($aException)
-{
-  messageLog($aException->__toString());
-  return $aException->getMessage();
-}
-
-function exceptionShow($aException)
-{
-  p(exceptionToString($aException));
-}
-
-function exceptionXmlShow($aException)
-{
-  p('<error><![CDATA['.exceptionToString($aException).']]></error>');
+  if ($file) {
+    fclose($file);
+  }
 }
 //!tag
-function tagsFind($aStr)
-{
-  $lResult = array();
-  $lCurrIndex = 0;
-  $lTagStartIndex = false;
-  $lTagFinishIndex = false;
+function tagsFind($str) {
+  $result = array();
+  $currIndex = 0;
+  $tagStartIndex = false;
+  $tagFinishIndex = false;
 
-  while (true)
-  {
-    $lTagStartIndex = mb_strpos($aStr, '<~', $lCurrIndex);
+  while (true) {
+    $tagStartIndex = mb_strpos($str, '<~', $currIndex);
 
-    if ($lTagStartIndex === false)
+    if ($tagStartIndex === false) {
       break;
+    }
 
-    $lTagStartIndex += 2;
-    $lCurrIndex = $lTagStartIndex;
+    $tagStartIndex += 2;
+    $currIndex = $tagStartIndex;
 
-    $lTagFinishIndex = mb_strpos($aStr, '~>', $lCurrIndex);
+    $tagFinishIndex = mb_strpos($str, '~>', $currIndex);
 
-    if ($lTagFinishIndex === false)
+    if ($tagFinishIndex === false) {
       break;
+    }
 
-    $lResult[mb_substr($aStr, $lTagStartIndex,
-      $lTagFinishIndex - $lTagStartIndex)] = true;
+    $result[mb_substr($str, $tagStartIndex,
+      $tagFinishIndex - $tagStartIndex)] = true;
 
-    $lCurrIndex = $lTagFinishIndex + 2;
+    $currIndex = $tagFinishIndex + 2;
 
-    $lTagStartIndex = false;
-    $lTagFinishIndex = false;
+    $tagStartIndex = false;
+    $tagFinishIndex = false;
   }
 
-  return array_keys($lResult);
+  return array_keys($result);
 }
 
-function tagsReplace($aStr, $aTags, $aValues)
-{
-  if (count($aTags) != count($aValues))
-     throw new Exception('Count tags and values are not same: Tags: "'.
-      print_r($aTags, true).'" Values: "'. print_r($aValues, true));
-
-  for ($i = 0, $l = count($aTags); $i < $l; $i++)
-    $aTags[$i] = '<~'.$aTags[$i].'~>';
-
-  return str_replace($aTags, $aValues, $aStr);
-}
-
-function tagsReplaceArray($aStr, $aTagsValues)
-{
-  $lTags = array();
-  $lValues = array();
-
-  foreach ($aTagsValues as $lTag => $lValue)
-  {
-    $lTags[] = $lTag;
-    $lValues[] = $lValue;
+function tagsReplace($str, $tags, $values) {
+  if (count($tags) != count($values)) {
+    throw new Exception('Count tags and values are not same: Tags: "' .
+      print_r($tags, true) . '" Values: "' . print_r($values, true) . '"');
   }
 
-  return tagsReplace($aStr, $lTags, $lValues);
-}
-//html
-function inputTypeByVarType($aVarType)
-{
-  switch ($aVarType) {
-    case VAR_TYPE_STRING:
-    case VAR_TYPE_INTEGER:
-    case VAR_TYPE_FLOAT:
-      return INPUT_TYPE_TEXT;
-    case VAR_TYPE_DATE:
-      return INPUT_TYPE_DATE;
-    case VAR_TYPE_TIME:
-      return INPUT_TYPE_TIME;
-    case VAR_TYPE_DATETIME:
-      return INPUT_TYPE_DATETIME;
-    case VAR_TYPE_BOOLEAN:
-      return INPUT_TYPE_CHECKBOX;
-    default:
-      throw new Exception('Not supported VarType: "'.$aVarType.'"');
+  for ($i = 0; $i < count($tags); $i++) {
+    $tags[$i] = '<~' . $tags[$i] . '~>';
   }
+
+  return str_replace($tags, $values, $str);
 }
+
+function tagsReplaceArray($str, $tagsValues) {
+  $tags = array();
+  $values = array();
+
+  foreach ($tagsValues as $tag => $value) {
+    $tags[] = $tag;
+    $values[] = $value;
+  }
+
+  return tagsReplace($str, $tags, $values);
+}
+
 //!classes
 class cNamedList
 {
@@ -409,11 +289,11 @@ class cNamedList
     $this->duplicationType = $aDuplicationType;
   }
 
-  public function add($aName, $aValue)
+  public function add($aName, $value)
   {
     $this->duplicationCheck($aName);
-    $this->items[$aName] = $aValue;
-    return $aValue;
+    $this->items[$aName] = $value;
+    return $value;
   }
 
   public function count()
@@ -453,46 +333,46 @@ class cNamedList
     return $this->items[$aName];
   }
 
-  public function getCheck($aName, &$aValue)
+  public function getCheck($aName, &$value)
   {
-    $lResult = $this->exist($aName);
-    if ($lResult)
-      $aValue = $this->items[$aName];
-    return $lResult;
+    $result = $this->exist($aName);
+    if ($result)
+      $value = $this->items[$aName];
+    return $result;
   }
 
-  public function insert($aName, $aValue, $aNameBefore)
+  public function insert($aName, $value, $aNameBefore)
   {
     $this->duplicationCheck($aName);
     $this->getByN($aNameBefore);
 
     $lItems = array();
 
-    foreach($this->items as $lName => $lValue)
+    foreach($this->items as $lName => $value)
     {
       if ($lName == $aNameBefore)
-        $lItems[$aName] = $aValue;
-      $lItems[$lName] = $lValue;
+        $lItems[$aName] = $value;
+      $lItems[$lName] = $value;
     }
 
     $this->items = $lItems;
   }
 
-  public function loadFromString($aValue)
+  public function loadFromString($value)
   {
-    $lItems = unserialize($aValue);
-    foreach ($lItems as $lName => $lValue)
-      $this->add($lName, $lValue);
+    $lItems = unserialize($value);
+    foreach ($lItems as $lName => $value)
+      $this->add($lName, $value);
   }
 
   public function toArray()
   {
-    $lResult = array();
+    $result = array();
 
-    foreach ($this->items as $lName => $lValue)
-      $lResult[$lName] = $lValue;
+    foreach ($this->items as $lName => $value)
+      $result[$lName] = $value;
 
-    return $lResult;
+    return $result;
   }
 
   public function saveToString()
@@ -510,11 +390,11 @@ class cNamedIndexedList extends cNamedList
 {
   private $itemsByI = array();
 
-  public function add($aName, $aValue)
+  public function add($aName, $value)
   {
-    parent::add($aName, $aValue);
-    $this->itemsByI[] = $aValue;
-    return $aValue;
+    parent::add($aName, $value);
+    $this->itemsByI[] = $value;
+    return $value;
   }
 
   public function count()
@@ -524,8 +404,8 @@ class cNamedIndexedList extends cNamedList
 
   public function delete($aName)
   {
-    $lValue = $this->getByN($aName);
-    $lIndex = array_search($lValue, $this->itemsByI);
+    $value = $this->getByN($aName);
+    $lIndex = array_search($value, $this->itemsByI);
     unset($this->itemsByI[$lIndex]);
     $this->itemsByI = array_values($this->itemsByI);
     parent::delete($aName);
@@ -538,17 +418,17 @@ class cNamedIndexedList extends cNamedList
     return $this->itemsByI[$aIndex];
   }
 
-  public function insert($aName, $aValue, $aNameBefore)
+  public function insert($aName, $value, $aNameBefore)
   {
-    parent::insert($aName, $aValue, $aNameBefore);
+    parent::insert($aName, $value, $aNameBefore);
 
     $lItemsByI = array();
 
-    foreach($this->itemsByI as $lIndex => $lValue)
+    foreach($this->itemsByI as $lIndex => $value)
     {
-      if ($lValue->name == $aNameBefore)
-        $lItemsByI[] = $aValue;
-      $lItemsByI[] = $lValue;
+      if ($value->name == $aNameBefore)
+        $lItemsByI[] = $value;
+      $lItemsByI[] = $value;
     }
 
     $this->itemsByI = $lItemsByI;
@@ -571,17 +451,17 @@ class cLinearNamedIndexedList extends cNamedIndexedList
 
   public function nextGet()
   {
-    $lResult = $this->getByI($this->position + 1);
+    $result = $this->getByI($this->position + 1);
     $this->position++;
-    return $lResult;
+    return $result;
   }
 
-  public function nextGetCheck(&$aValue)
+  public function nextGetCheck(&$value)
   {
     if (!$this->nextExist())
       return false;
 
-    $aValue = $this->nextGet();
+    $value = $this->nextGet();
     return true;
   }
 
@@ -598,65 +478,65 @@ class cNameValueObject
   public $name = '';
   public $index = -1;
 
-  public function __construct($aName, $aValue)
+  public function __construct($aName, $value)
   {
     $this->name = $aName;
-    $this->valueSet($aValue);
+    $this->valueSet($value);
   }
 
   public function getB()
   {
-    return $this->getByType(VAR_TYPE_BOOLEAN);
+    return $this->getByType(V_BOOLEAN);
   }
 
   public function getD()
   {
-    return $this->getByType(VAR_TYPE_DATE);
+    return $this->getByType(V_DATE);
   }
 
   public function getDT()
   {
-    return $this->getByType(VAR_TYPE_DATETIME);
+    return $this->getByType(V_DATETIME);
   }
 
-  public function getByType($aVarType)
+  public function getByType($varType)
   {
-    return valueByType($this->value, $aVarType);
+    return valueByType($this->value, $varType);
   }
 
   public function getF()
   {
-    return $this->getByType(VAR_TYPE_FLOAT);
+    return $this->getByType(V_FLOAT);
   }
 
   public function getI()
   {
-    return $this->getByType(VAR_TYPE_INTEGER);
+    return $this->getByType(V_INTEGER);
   }
 
   public function getS()
   {
-    return $this->getByType(VAR_TYPE_STRING);
+    return $this->getByType(V_STRING);
   }
 
   public function getT()
   {
-    return $this->getByType(VAR_TYPE_TIME);
+    return $this->getByType(V_TIME);
   }
 
-  public function valueSet($aValue)
+  public function valueSet($value)
   {
-    $this->value = $aValue;
+    $this->value = $value;
   }
 }
 
 class cNameValueLinearNamedIndexedList extends cLinearNamedIndexedList
 {
-  public function add($aName, $aValue)
+  public function add($aName, $value)
   {
-    parent::add($aName, $aValue);
-    $aValue->index = $this->count() - 1;//!!test on delete
-    return $aValue;
+    parent::add($aName, $value);
+    $value->index = $this->count() - 1;//!!test on delete
+    return $value;
   }
 
   public function addNameValueObject(cNameValueObject $aObject)
@@ -667,34 +547,34 @@ class cNameValueLinearNamedIndexedList extends cLinearNamedIndexedList
   public function currDeleteByN($aName)
   {
     eAssert($this->position > -1);
-    $lValue = $this->getByI($this->position);
-    eAssert($lValue->name == $aName);
+    $value = $this->getByI($this->position);
+    eAssert($value->name == $aName);
     $this->delete($aName);
     $this->position--;
   }
 
-  public function nextGetCheckByN($aName, &$aValue)
+  public function nextGetCheckByN($aName, &$value)
   {
     if (!$this->nextExist())
       return false;
 
-    $lValue = $this->getByI($this->position + 1);
+    $value = $this->getByI($this->position + 1);
 
-    if ($lValue->name != $aName)
+    if ($value->name != $aName)
       return false;
 
-    $aValue = $lValue;
+    $value = $value;
     $this->position++;
     return true;
   }
 
   public function nextGetByN($aName)
   {
-    $lResult = $this->nextGet();
-    if ($lResult->name != $aName)
+    $result = $this->nextGet();
+    if ($result->name != $aName)
       throw new Exception('Invalid next param name: "'.$aName.'" must be: "'.
-        $lResult->name.'"');
-    return $lResult;
+        $result->name.'"');
+    return $result;
   }
 }
 
@@ -710,7 +590,7 @@ class cXmlBase extends cNameValueObject
   public $id = '';
   public $anchor = '';
 
-  public function __construct($aName, $aValue)
+  public function __construct($aName, $value)
   {
     if (!$aName)//!!test it
       return;
@@ -762,7 +642,7 @@ class cXmlBase extends cNameValueObject
     if (!$this->id)
       $this->id = $lName;
 
-    parent::__construct($lName, $aValue);
+    parent::__construct($lName, $value);
   }
 }
 
@@ -782,9 +662,9 @@ class cXmlNode extends cXmlBase
 
   public $isUnique = false;
 
-  public function __construct($aName, $aValue)
+  public function __construct($aName, $value)
   {
-    parent::__construct($aName, $aValue);
+    parent::__construct($aName, $value);
     $this->attrs = new cNameValueLinearNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
     $this->nodes = new cNameValueLinearNamedIndexedList(cNamedList::DUPLICATION_TYPE_NONE);
     $this->nodesById = new cNamedList(cNamedList::DUPLICATION_TYPE_NONE);
@@ -899,11 +779,11 @@ class cXmlNode extends cXmlBase
     return  $lNodeValueTrim == '' ? '' : $lNodeValue;
   }
 
-  private function nodeValueValidCheck($aValue)
+  private function nodeValueValidCheck($value)
   {
-    for ($i = 0, $l = mb_strlen($aValue); $i < $l; $i++)
+    for ($i = 0, $l = mb_strlen($value); $i < $l; $i++)
     {
-      $lChar = $aValue[$i];
+      $lChar = $value[$i];
       switch ($lChar) {
       case '<':
       case '>':
@@ -923,21 +803,21 @@ class cXmlNode extends cXmlBase
       $this->nodes->getByI($i)->nodeSave($aSimpleXmlElement);
   }
 
-  public function saveToFile($aFlp)
+  public function saveToFile($filePath)
   {
     $lDom = dom_import_simplexml($this->saveToSimpleXMLElement())->ownerDocument;
     $lDom->formatOutput = true;
-    $lDom->save($aFlp);
+    $lDom->save($filePath);
   }
 
   private function saveToSimpleXMLElement()
   {
-    $lResult = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?>'.
+    $result = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?>'.
       '<'.$this->name.'>'.$this->value.'</'.$this->name.'>');
 
-    $this->save($lResult);
+    $this->save($result);
 
-    return $lResult;
+    return $result;
   }
 
   public function saveToString()
@@ -954,14 +834,14 @@ class cXmlNode extends cXmlBase
         '" Xml1: "'.$this->saveToString().'" Xml2: "'.$aXmlNode->saveToString().
         '"');
 
-    $lValue = $aXmlNode->getS();
-    if ($lValue != '')
+    $value = $aXmlNode->getS();
+    if ($value != '')
     {
-      if ($this->getS() == $lValue)
+      if ($this->getS() == $value)
         throw new Exception('Duplicated value for node: "'.$this->name.
-          '" value: "'.$lValue.'"');
+          '" value: "'.$value.'"');
 
-      $this->valueSet($lValue);
+      $this->valueSet($value);
     }
 
     for ($i = 0, $l = $aXmlNode->attrs->count(); $i < $l; $i++)
@@ -1061,10 +941,10 @@ class cXmlDocument extends cXmlNode
     $this->load($aXmlDocument);
   }
 
-  public function loadFromFile($aFlp)
+  public function loadFromFile($filePath)
   {
-    $lDoc = simplexml_load_file($aFlp);
-    eAssert($lDoc, 'Can not load xmlFlp: "'.$aFlp.'"');
+    $lDoc = simplexml_load_file($filePath);
+    eAssert($lDoc, 'Can not load xmlFlp: "'.$filePath.'"');
     $this->loadDocument($lDoc);
   }
 

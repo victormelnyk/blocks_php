@@ -1,10 +1,8 @@
 <?php
 //!uses
 //PDO
-//blocks.php, profiler/.php
 
-abstract class cDbBase
-{
+abstract class DbBase {
   const BAD_IDENTITY_ID = 0;
   //!SQL_ACTION
   const SQL_ACTION_DELETE = 'delete';
@@ -13,217 +11,181 @@ abstract class cDbBase
 
   protected $pdo = null;
 
-  public function __construct($aServerPrefix, $aHostName, $aUserName, $aPassword, $aDbName)
-  {
-    $this->pdo = new PDO($aServerPrefix.':host='.$aHostName.';dbname='.$aDbName,
-      $aUserName, $aPassword, array(
+  public function __construct($serverPrefix, $hostName, $userName, $password,
+    $dbName) {
+    $this->pdo = new PDO(
+      $serverPrefix.':host='.$hostName.';dbname='.$dbName, $userName, $password,
+      array(
         1002/*PDO::MYSQL_ATTR_INIT_COMMAND*/ => 'SET NAMES utf8',
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+      )
+    );
   }
 
-  public function beginTran()
-  {
+  public function beginTran() {
     eAssert($this->pdo->beginTransaction());
   }
 
-  public function commitTran()
-  {
-    eAssert($this->pdo->commit());
+  public static function buildDeleteSql($tableName, $whereParams) {
+    return 'DELETE FROM ' . $tableName .
+      self::buildWhereSql($whereParams);
   }
 
-  public function execute($aSql, $aParams = array())
-  {
-    $this->executeInternal($aSql, $aParams);
-  }
+  public static function buildInsertSql($tableName, $params) {
+    eAssert(count($params) > 0);
+    $fieldNames = array_keys($params);
 
-  public function executeField($aSql, $aFieldName, &$aField, $aParams = array(),
-    $aFieldType = VAR_TYPE_STRING)
-  {
-    throw new Exception('Not implemented executeField '.$aSql);
-  }
-
-  private function executeInternal($aSql, array $aParams)
-  {
-    if (cPage::settingsGet()->isProfile)//!!delete using cPage
-      cPFHelper::sqlProfile($this, $aSql, $aParams);
-
-    $lStatement = $this->pdo->prepare($aSql);
-    eAssert($lStatement->execute($aParams));
-    return $lStatement;
-  }
-
-  public function executeLastInsertIdGet($aSql, $aParams = array(),
-    $aFieldType = VAR_TYPE_INTEGER)
-  {
-    $this->execute($aSql, $aParams);
-    return valueByType($this->pdo->lastInsertId(), $aFieldType);
-  }
-
-  public function executeRecord($aSql, &$aRecord, $aParams = array(),
-    $aFieldTypes = array())
-  {
-    eAssert(count($aRecord) == 0, 'Record is not empty');
-
-    $lRecordset = array();
-    $this->executeRecordset($aSql, $lRecordset, $aParams, $aFieldTypes);
-    $lRecordCount = count($lRecordset);
-
-    if ($lRecordCount == 1)
-    {
-      $aRecord = $lRecordset[0];
-      return true;
-    }
-    else
-    if ($lRecordCount == 0)
-      return false;
-    else
-      throw new Exception('Query return more then one record'.' '.$aSql);
-  }
-
-  public function executeRecordset($aSql, &$aRecordset, $aParams = array(),
-    $aFieldTypes = array())
-  {
-    eAssert(count($aRecordset) == 0, 'Recordset is not empty');
-
-    $lStatement = $this->executeInternal($aSql, $aParams);
-    $lStatement->setFetchMode(PDO::FETCH_ASSOC);
-
-    while ($lRecord = $lStatement->fetch())
-    {
-      foreach ($aFieldTypes as $lFieldName => $lFieldType)
-        $lRecord[$lFieldName] = valueByType($lRecord[$lFieldName], $lFieldType);
-
-      $aRecordset[] = $lRecord;
-    }
-
-    return (count($aRecordset) > 0);
-  }
-
-  public function executeValue($aSql, $aFieldName, &$aValue,
-    $aParams = array(), $aFieldType = VAR_TYPE_STRING)
-  {
-    $lResult = $this->executeRecord($aSql, $lRecord, $aParams,
-      array($aFieldName => $aFieldType));
-
-    if ($lResult)
-    {
-      if (!array_key_exists($aFieldName, $lRecord))
-        throw new Exception('Can not get field "'. $aFieldName .'" '.$aSql);
-
-      $aValue = $lRecord[$aFieldName];
-    }
-
-    return $lResult;
-  }
-
-  public function rollbackTran()
-  {
-    eAssert($this->pdo->rollBack());
-  }
-
-  abstract public function stringToDate($aValue);
-
-  public static function sqlDeleteBuild($aTableName, $aWhereParams)
-  {
-    return 'DELETE FROM '.$aTableName.
-      self::sqlWhereBuild($aWhereParams);
-  }
-
-  public static function sqlInsertBuild($aTableName, $aParams)
-  {
-    eAssert(count($aParams) > 0);
-    $lFieldNames = array_keys($aParams);
-
-    return 'INSERT INTO '.$aTableName.CRLF.
-      '('.CRLF.
-      '  '.implode(','.CRLF.'  ', $lFieldNames).CRLF.
-      ')'.CRLF.
-      'VALUES'.CRLF.
-      '('.CRLF.
-      '  :'.implode(','.CRLF.'  :', $lFieldNames).CRLF.
+    return 'INSERT INTO ' . $tableName . CRLF .
+      '(' . CRLF .
+      '  ' . implode(',' . CRLF . '  ', $fieldNames) . CRLF .
+      ')' . CRLF .
+      'VALUES' . CRLF .
+      '(' . CRLF .
+      '  :' . implode(',' . CRLF .'  :', $fieldNames) . CRLF .
       ')';
   }
 
-  public static function sqlSelectBuild($aTableName, $aFieldNames, $aWhereParams)
-  {
-    return 'SELECT '.
-      '  '.implode(','.CRLF.'  ', $aFieldNames).CRLF.
-      'FROM '.$aTableName.
-      self::sqlWhereBuild($aWhereParams);
+  public static function buildSelectSql($tableName, $fieldNames, $whereParams) {
+    return 'SELECT' . CRLF .
+      '  ' . implode(',' . CRLF . '  ', $fieldNames) . CRLF .
+      'FROM ' . $tableName .
+      self::buildWhereSql($whereParams);
   }
 
-  public static function sqlUpdateBuild($aTableName, &$aParams, $aWhereParams)
-  {
-    $lCount = count($aParams);
-    eAssert($lCount > 0);
-    $lFieldNames = array_keys($aParams);
-    $lValues = array();
+  public static function buildUpdateSql($tableName, &$params, $whereParams) {
+    $count = count($params);
+    eAssert($count > 0);
+    $fieldNames = array_keys($params);
+    $values = array();
 
-    for ($i = 0; $i < $lCount; $i++)
-    {
-      $lFieldName = $lFieldNames[$i];
-      $lValues[] = $lFieldName.' = :'.$lFieldName;
+    for ($i = 0; $i < $count; $i++) {
+      $fieldName = $fieldNames[$i];
+      $values[] = $fieldName . ' = :' . $fieldName;
     }
 
-    $lSql = 'UPDATE '.$aTableName.CRLF.
-      'SET'.CRLF.
-      '  '.implode(','.CRLF.'  ', $lValues).CRLF.
-      self::sqlWhereBuild($aWhereParams);
+    $sql = 'UPDATE ' . $tableName . ' SET' . CRLF .
+      '  ' . implode(',' . CRLF . '  ', $values) .
+      self::buildWhereSql($whereParams);
 
-    $aParams = array_merge($aParams, $aWhereParams);
+    $params = array_merge($params, $whereParams);
 
-    return $lSql;
+    return $sql;
   }
 
-  public static function sqlWhereBuild($aParams)
-  {
-    $lCount = count($aParams);
+  public static function buildWhereSql($params) {
+    $count = count($params);
 
-    if (!$lCount)
+    if (!$count) {
       return '';
+    }
 
-    $lFieldNames = array_keys($aParams);
-    $lConditions = array();
+    $fieldNames = array_keys($params);
+    $conditions = array();
 
-    for($i = 0; $i < $lCount; $i++)
-    {
-      $lFieldName = $lFieldNames[$i];
-      $lConditions[] = $lFieldName.' = :'.$lFieldName;
+    for($i = 0; $i < $count; $i++) {
+      $fieldName = $fieldNames[$i];
+      $conditions[] = $fieldName . ' = :' . $fieldName;
     }
 
     return CRLF.
       'WHERE'.CRLF.
-      '  '.implode(CRLF.'  AND ', $lConditions);
+      '  '.implode(CRLF.'  AND ', $conditions);
+  }
+
+  public function commitTran() {
+    eAssert($this->pdo->commit());
+  }
+
+  public function execute($sql, array $params = array()) {
+    $this->executeInternal($sql, $params);
+  }
+
+  public function executeField($sql, $fieldName, array &$field = array(),
+    array $params = array(), $fieldType = V_STRING) {
+    throw new Exception('Not implemented executeField ' . $sql);
+  }
+
+  private function executeInternal($sql, array $params) {
+    //!!!if (cPage::settingsGet()->isProfile)//!!delete using cPage
+    //  cPFHelper::sqlProfile($this, $sql, $params);
+
+    $statement = $this->pdo->prepare($sql);
+    eAssert($statement->execute($params));
+    return $statement;
+  }
+
+  public function executeRecord($sql, array &$record, array $params = array(),
+    array $fieldTypes = array()) {
+    eAssert(count($record) == 0, 'Record is not empty');
+
+    $recordset = array();
+    $this->executeRecordset($sql, $recordset, $params, $fieldTypes);
+    $recordCount = count($recordset);
+
+    if ($recordCount === 1) {
+      $record = $recordset[0];
+      return true;
+    } else if ($recordCount === 0) {
+      return false;
+    } else {
+      throw new Exception('Query return more then one record ' . $sql);
+    }
+  }
+
+  public function executeRecordset($sql, array &$recordset,
+    array $params = array(), array $fieldTypes = array()) {
+    eAssert(count($recordset) === 0, 'Recordset is not empty');
+
+    $statement = $this->executeInternal($sql, $params);
+    $statement->setFetchMode(PDO::FETCH_ASSOC);
+
+    while ($record = $statement->fetch()) {
+      $recordset[] = $record;
+    }
+
+    $recordCount = count($recordset);
+
+    foreach ($fieldTypes as $fieldName => $fieldType) {
+      for ($i = 0; $i < $recordCount; $i++) {
+        $recordset[$i][$fieldName] = valueByType($recordset[$i][$fieldName],
+          $fieldType);
+      }
+    }
+
+    return ($recordCount > 0);
+  }
+
+  public function executeValue($sql, $fieldName, &$value,
+    array $params = array(), $fieldType = V_STRING) {
+    $record = array();
+    $result = $this->executeRecord($sql, $record, $params,
+      array($fieldName => $fieldType));
+
+    if ($result) {
+      if (!array_key_exists($fieldName, $record)) {
+        throw new Exception('Can not get field "'. $fieldName .'" '.$sql);
+      }
+
+      $value = $record[$fieldName];
+    }
+
+    return $result;
+  }
+
+  public function rollbackTran() {
+    eAssert($this->pdo->rollBack());
   }
 }
 
-class cDbMySql extends cDbBase
-{
-  public function __construct($aHostName, $aUserName, $aPassword, $aDbName)
-  {
-    parent::__construct('mysql', $aHostName, $aUserName, $aPassword, $aDbName);
-  }
-
-  public function stringToDate($aValue)
-  {
-    $elements = explode('/', $aValue);
-    eAssert(count($elements) == 3, 'Can not convert "'.$aValue.
-      '" to MySql date');
-
-    return $elements[2].'-'.$elements[1].'-'.$elements[0];
+class DbMySql extends DbBase {
+  public function __construct($hostName, $userName, $password, $dbName) {
+    parent::__construct('mysql', $hostName, $userName, $password, $dbName);
   }
 }
 
-class cDbPGSql extends cDbBase
-{
-  public function __construct($aHostName, $aUserName, $aPassword, $aDbName)
-  {
-    parent::__construct('pgsql', $aHostName, $aUserName, $aPassword, $aDbName);
-  }
-
-  public function stringToDate($aValue)
-  {
-    throw new Exception('Not implemented');
+class DbPGSql extends DbBase {
+  public function __construct($hostName, $userName, $password, $dbName) {
+    parent::__construct('pgsql', $hostName, $userName, $password, $dbName);
   }
 }
 ?>
