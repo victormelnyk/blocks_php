@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Block>
+  <Inherited/>
+  <Localization>
+    <Tags>
+      <Error>
+        <en>There was an error, please contact administrator</en>
+        <uk>Сталася помилка, зверніться до адміністратора</uk>
+        <ru>Ошибка, обратитесь к администратору</ru>
+      </Error>
+      <Login>
+        <en>Login</en>
+        <uk>Логін</uk>
+        <ru>Логин</ru>
+      </Login>
+      <LoginError>
+        <en>Login error</en>
+        <uk>Даний логін вже використовується</uk>
+        <ru>Этот логин уже используется</ru>
+      </LoginError>
+      <Name>
+        <en>Name</en>
+        <uk>Ім'я</uk>
+        <ru>Имя</ru>
+      </Name>
+      <ParamsError>
+        <en>Please check the form is correct</en>
+        <uk>Перевірте, що форму заповнено повністю і правильно</uk>
+        <ru>Проверьте что форма заполнена полностью и правильно</ru>
+      </ParamsError>
+      <Password>
+        <en>Password</en>
+        <uk>Пароль</uk>
+        <ru>Пароль</ru>
+      </Password>
+      <PasswordConfirm>
+        <en>Password confirm</en>
+        <uk>Підтвердження паролю</uk>
+        <ru>Подтвержднние пароля</ru>
+      </PasswordConfirm>
+      <PasswordConfirmError>
+        <en>Password confirm error</en>
+        <uk>Введені паролі не співпадають</uk>
+        <ru>Введенные пароли не совпадают</ru>
+      </PasswordConfirmError>
+      <SignUp>
+        <en>SignUp</en>
+        <uk>Зареєструватись</uk>
+        <ru>Зарегистрироваться</ru>
+      </SignUp>
+      <Welcome>
+        <en>Welcome</en>
+        <uk>Вітаємо Вас</uk>
+        <ru>Приветствуем Вас</ru>
+      </Welcome>
+      <Title>
+        <en>SignUp</en>
+        <uk>Реєстрація</uk>
+        <ru>Регистрация</ru>
+      </Title>
+    </Tags>
+  </Localization>
+  <Scripts>
+    <_i-Script>s:web/comp/form_checker/.js</_i-Script>
+  </Scripts>
+  <InitScripts>
+    <InitScript><![CDATA[
+      page.signUp = new page.cSignUp('sign_up',
+        ['name', 'login', 'password', 'password_confirm'],
+        '');
+    ]]></InitScript>
+  </InitScripts>
+</Block>

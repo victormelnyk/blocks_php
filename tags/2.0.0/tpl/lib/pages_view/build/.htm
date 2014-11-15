@@ -1,0 +1,11 @@
+<?
+for ($i = 0, $l = count($recordset); $i < $l; $i++)
+{
+  $lRecord = $recordset[$i];
+
+  p('<div><a href="'.$lRecord['url'].'">'.$lRecord['name'].'</a>'.
+    ($lRecord['description'] ? ' - '.$lRecord['description'] : '').'<br/>'.
+    '<iframe src="/'.$lRecord['url'].'" style="width: '.$lRecord['width'].
+    '; height: '.$lRecord['height'].'; max-height: 300px"></iframe></div><br/>');
+}
+?>
