@@ -1,9 +1,7 @@
-<?php
-class cBlocks_Sys_Static extends cBlock
-{
-  public function build()
-  {
-    return $this->fileFirstExistDataGet('.htm');
+<?
+class Blocks_Sys_Static extends Block {
+  public function build() {
+    return $this->getFirstExistFileData('.htm');
   }
 }
 ?>

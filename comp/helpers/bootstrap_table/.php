@@ -1,4 +1,4 @@
-<?php
+<?
 class cBootstrapTableHelper
 {
   const TABLE_HEADER = '<table class="table table-bordered table-striped table-hover table-condensed">';

@@ -1,9 +1,9 @@
-<?php
-class cBlocks_Cache_Clear extends cBlock
+<?
+class Blocks_Cache_Clear extends Block
 {
   public function build()
   {
-    return $this->fileFirstExistDataGet('.htm');
+    return $this->getFirstExistFileData('.htm');
   }
 
   protected function init()
@@ -15,9 +15,9 @@ class cBlocks_Cache_Clear extends cBlock
 
     if ($lIsClear)
     {
-      removeDir($this->appDirGet().$this->cache->cacheDir, false);
+      removeDir($this->getAppDir().$this->cache->cacheDir, false);
 
-      $this->initScriptAdd('page.logger.log("Кеш очищено")');//!!ML
+      $this->addInitScript('page.logger.log("Кеш очищено")');//!!ML
     }
   }
 }

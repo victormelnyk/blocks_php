@@ -1,23 +1,23 @@
-<?php
-class cBlocks_PagesView_Build extends cBlock
+<?
+class Blocks_PagesView_Build extends Block
 {
   private $recordset = array();
 
   public function build()
   {
-    return $this->templateProcess($this->fileFirstExistDataGet('.htm'), array(
+    return $this->templateProcess($this->getFirstExistFileData('.htm'), array(
       'recordset' => $this->recordset
     ));
   }
 
-  protected function settingsRead(cXmlNode $aXmlNode)
+  protected function readSettings(cXmlNode $aXmlNode)
   {
-    parent::settingsRead($aXmlNode);
+    parent::readSettings($aXmlNode);
 
     $lPagesNode = $aXmlNode->nodes->getNextByN('Pages');
     while ($lPagesNode->nodes->getCheckNext($lPageNode))
     {
-      $lNames = $this->nameFullExplode($lPageNode->name, 2);
+      $lNames = $this->explodeFullName($lPageNode->name, 2);
 
       $lRunDirName = $lNames[0];
       $lPageName   = $lNames[1];
@@ -49,7 +49,7 @@ class cBlocks_PagesView_Build extends cBlock
       else
         $lHeight = '200px';
 
-      $lUrl = $this->page->runDirGet($lRunDirName).$lPageName.'.php'.
+      $lUrl = $this->page->getRunDir($lRunDirName).$lPageName.'.php'.
         ($lParams ? '?'.$lParams : '');
 
       if (!$lName)

@@ -1,4 +1,4 @@
-<?php
+<?
 //!PF = Profiler
 
 class cPFHelper

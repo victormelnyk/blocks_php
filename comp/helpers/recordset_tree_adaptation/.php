@@ -1,4 +1,4 @@
-<?php
+<?
 class  cRecordsetTreeAdaptationItem
 {
   public $children = array();

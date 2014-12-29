@@ -39,7 +39,7 @@ aResponse - Error
   error: 'error_message'
 }
 */
-page.cBlockProcessor = function()
+page.BlockProcessor = function()
 {
   var
     self = this;
@@ -195,11 +195,11 @@ page.cBlockProcessor = function()
   return _constructor();
 }
 
-page.cPageBlockProcessor = function()
+page.PageBlockProcessor = function()
 {
   var
     self = this,
-    fBlockProcessor = new page.cBlockProcessor();
+    fBlockProcessor = new page.BlockProcessor();
 
   function _constructor()
   {
@@ -245,7 +245,7 @@ page.cPageBlockProcessor = function()
 page.blocksRefresh = function(aBlockNames, aBlocksParams, aOnComplete, aOnError)
 {
   var
-    lBlockProcessor = new page.cPageBlockProcessor(),
+    lBlockProcessor = new page.PageBlockProcessor(),
     lParams = {},
     lBlocksParams = aBlocksParams || {};
 

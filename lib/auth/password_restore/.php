@@ -1,6 +1,6 @@
-<?php
+<?
 //!!$aLogin -> $aUserLogin
-abstract class cBlocks_Auth_PasswordRestore extends cBlock
+abstract class Blocks_Auth_PasswordRestore extends Block
 {
   protected $errorType = '';
   protected $status = false;
@@ -10,8 +10,8 @@ abstract class cBlocks_Auth_PasswordRestore extends cBlock
   public function build()
   {
     if (!$this->cache->isValid)//!for cache
-      $this->fileFirstExistDataGet('report.htm');
-    return $this->templateProcess($this->fileFirstExistDataGet('.htm'),
+      $this->getFirstExistFileData('report.htm');
+    return $this->templateProcess($this->getFirstExistFileData('.htm'),
       array(
         'status'    => $this->status,
         'errorType' => $this->errorType
@@ -37,14 +37,14 @@ abstract class cBlocks_Auth_PasswordRestore extends cBlock
 
   protected function onError($aErrorType)
   {
-    $this->initScriptAdd('page.logger.error("'.
-      $this->localizationTagValueGet($aErrorType).'")');
+    $this->addInitScript('page.logger.error("'.
+      $this->getMlTagValue($aErrorType).'")');
   }
 
   protected function onSuccess()
   {
-    $this->initScriptAdd('page.logger.log("'.
-      $this->localizationTagValueGet('Success').'")');
+    $this->addInitScript('page.logger.log("'.
+      $this->getMlTagValue('Success').'")');
   }
 
   private function paramsReadCheck(&$aUserId, &$aLogin)
@@ -79,7 +79,7 @@ abstract class cBlocks_Auth_PasswordRestore extends cBlock
       $this->passwordUpdate($aUserId, $lParams);
 
       $this->mailSend($aEmail, $lPasswordNew, $this->templateProcess(
-        $this->fileFirstExistDataGet('report.htm'),
+        $this->getFirstExistFileData('report.htm'),
         array('passwordNew' => $lPasswordNew)));
 
       $this->db->commitTran();

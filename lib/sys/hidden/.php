@@ -1,5 +1,5 @@
-<?php
-class cBlocks_Sys_Hidden extends cBlock
+<?
+class Blocks_Sys_Hidden extends Block
 {
   public function build()
   {

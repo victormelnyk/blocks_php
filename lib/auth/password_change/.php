@@ -1,5 +1,5 @@
-<?php
-abstract class cBlocks_Auth_PasswordChange extends cBlock
+<?
+abstract class Blocks_Auth_PasswordChange extends Block
 {
   private $errorType = '';
   private $status = false;
@@ -8,7 +8,7 @@ abstract class cBlocks_Auth_PasswordChange extends cBlock
 
   public function build()
   {
-    return $this->templateProcess($this->fileFirstExistDataGet('.htm'),
+    return $this->templateProcess($this->getFirstExistFileData('.htm'),
       array('status' => $this->status, 'errorType' => $this->errorType));
   }
 

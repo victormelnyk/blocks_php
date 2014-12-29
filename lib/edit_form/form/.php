@@ -1,5 +1,5 @@
-<?php
-cPage::moduleAdd('blocks/lib/db_view/controler/.php');
+<?
+Page::addModule('blocks/lib/db_view/controler/.php');
 
 class cFormOption extends cOptionBase
 {
@@ -103,7 +103,7 @@ class cForm extends cOptionsBase
   }
 }
 
-class cBlocks_EditForm_Form extends cBlock
+class Blocks_EditForm_Form extends Block
 {
   public $form = null;
 
@@ -126,9 +126,9 @@ class cBlocks_EditForm_Form extends cBlock
     $this->form->paramsRead();
   }
 
-  protected function settingsRead(cXmlNode $aXmlNode)
+  protected function readSettings(cXmlNode $aXmlNode)
   {
-    parent::settingsRead($aXmlNode);
+    parent::readSettings($aXmlNode);
 
     $this->form->loadFromXml($aXmlNode->nodes->getNextByN('Form'));
   }

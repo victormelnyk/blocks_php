@@ -1,5 +1,5 @@
-<?php
-cPage::moduleAdd('blocks/lib/sys/named_list/.php');
+<?
+Page::addModule('blocks/lib/sys/named_list/.php');
 
 abstract class cOptionBase
 {
@@ -705,7 +705,7 @@ class cLimit extends cOptionsBase
   }
 }
 
-class cBlocks_DbView_Controler extends cBlocks_Sys_NamedList
+class Blocks_DbView_Controler extends Blocks_Sys_NamedList
 {
   private $sql       = '';
   private $sqlParams = array();
@@ -733,12 +733,12 @@ class cBlocks_DbView_Controler extends cBlocks_Sys_NamedList
     for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
     {
       $lBlock = $this->blocks[$i];
-      $lValues[$lBlock->name] = $lBlock->contentGet();
+      $lValues[$lBlock->name] = $lBlock->getContent();
     }
 
     $lValues['params'] = $this->params;
 
-    return $this->templateProcess($this->fileFirstExistDataGet('.htm'), $lValues);
+    return $this->templateProcess($this->getFirstExistFileData('.htm'), $lValues);
   }
 
   protected function init()
@@ -751,7 +751,7 @@ class cBlocks_DbView_Controler extends cBlocks_Sys_NamedList
 
     $this->paramsRead();
 
-    $this->sql = $this->fileFirstExistDataGet('.sql');
+    $this->sql = $this->getFirstExistFileData('.sql');
 
     $this->sql = $this->templateProcess($this->sql,
       array(
@@ -818,10 +818,10 @@ class cBlocks_DbView_Controler extends cBlocks_Sys_NamedList
 
   private function recordsetPostProcess()
   {
-    $lModuleFlps = $this->fileExistFlpsGet('.php');
+    $lModuleFlps = $this->getExistFilePaths('.php');
 
     for ($i = 0, $l = count($lModuleFlps); $i < $l; $i++)
-      $this->page->moduleAddDirect($lModuleFlps[$i]);
+      $this->page->addModuleDirect($lModuleFlps[$i]);
 
     for ($lIndex = 0, $lCount = count($this->recordPPFuncs);
       $lIndex < $lCount; $lIndex++)
@@ -849,9 +849,9 @@ class cBlocks_DbView_Controler extends cBlocks_Sys_NamedList
     }
   }
 
-  protected function settingsRead(cXmlNode $aXmlNode)
+  protected function readSettings(cXmlNode $aXmlNode)
   {
-    parent::settingsRead($aXmlNode);
+    parent::readSettings($aXmlNode);
 
     if ($aXmlNode->nodes->getCheckNextByN('RecordPostProcessFunctions', $lNode))
       while ($lNode->nodes->getCheckNext($lFunctionNode))

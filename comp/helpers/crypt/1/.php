@@ -1,4 +1,4 @@
-<?php
+<?
 class cCryptHelper
 {
   public static $version = '1';

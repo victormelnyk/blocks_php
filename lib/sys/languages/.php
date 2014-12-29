@@ -1,12 +1,12 @@
-<?php
-class cBlocks_Sys_Languages extends cBlock
+<?
+class Blocks_Sys_Languages extends Block
 {
   private $languages = array('uk', 'ru', 'en'); //!! we need languages list on app or set level
   private $languagesEx = array();
 
   public function build()
   {
-    return $this->templateProcess($this->fileFirstExistDataGet('.htm'),
+    return $this->templateProcess($this->getFirstExistFileData('.htm'),
       array('languages' => $this->languagesEx));
   }
 

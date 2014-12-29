@@ -1,7 +1,7 @@
-<?php
-cPage::moduleAdd('blocks/comp/helpers/page_navigator/.php');
+<?
+Page::addModule('blocks/comp/helpers/page_navigator/.php');
 
-class cBlocks_DbView_Limit extends cBlock
+class Blocks_DbView_Limit extends Block
 {
   public function build()
   {
@@ -9,13 +9,13 @@ class cBlocks_DbView_Limit extends cBlock
     {
       //!for cache
       if (!$this->cache->isValid)
-        $this->fileFirstExistDataGet('.htm');
+        $this->getFirstExistFileData('.htm');
 
       return '';
     }
 
     $lLimit = $this->owner->limit;
-    return $this->templateProcess($this->fileFirstExistDataGet('.htm'), array(
+    return $this->templateProcess($this->getFirstExistFileData('.htm'), array(
       'paramName'          => $lLimit->paramName,
       'pageNoParamName'    => $lLimit->pageNoParamName,
       'options'            => $lLimit->asArrayGet(),

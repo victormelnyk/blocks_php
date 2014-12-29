@@ -1,10 +1,10 @@
-<?php
+<?
 //!COMPARE_TYPE
 define('COMPARE_TYPE_GREATER', '1');
 define('COMPARE_TYPE_EQUAL',   '0');
 define('COMPARE_TYPE_LESS',    '-1');
 
-abstract class cLogonContext extends cContext
+abstract class cLogonContext extends Context
 {
   const NO_LOGON_LEVEL  = '';
   const LOGON_LEVEL_ALL = 'all';
