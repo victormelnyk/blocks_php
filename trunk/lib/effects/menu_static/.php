@@ -21,7 +21,7 @@ class cBlocks_Effects_MenuStatic extends cBlock
     $lChildrenNode = null;
     $lIsActiveAttr = null;
 
-    while ($aNodes->nextGetCheck($lNode))
+    while ($aNodes->getCheckNext($lNode))
     {
       $lRecord = array(
         'id'        => $lId,
@@ -32,7 +32,7 @@ class cBlocks_Effects_MenuStatic extends cBlock
 
       if ($lNode->nodes->count())
       {
-        while ($lNode->nodes->nextGetCheck($lParamNode))
+        while ($lNode->nodes->getCheckNext($lParamNode))
         {
           if ($lParamNode->name == 'Children')
             $lChildrenNode = $lParamNode;
@@ -52,7 +52,7 @@ class cBlocks_Effects_MenuStatic extends cBlock
       }
 
       if ($aLevel == 0
-        && $lNode->attrs->nextGetCheckByN('IsActive', $lIsActiveAttr)
+        && $lNode->attrs->getCheckNextByN('IsActive', $lIsActiveAttr)
         && $lIsActiveAttr->getB())
       {
         if ($this->activeItemExists)
@@ -72,7 +72,7 @@ class cBlocks_Effects_MenuStatic extends cBlock
     parent::settingsRead($aXmlNode);
 
     $this->nodesProcess(
-      $aXmlNode->nodes->nextGetByN('MenuStaticItems')->nodes, 0, 0);
+      $aXmlNode->nodes->getNextByN('MenuStaticItems')->nodes, 0, 0);
 
     cRecordsetTreeAdaptationHelper::process($this->recordset, 'id', 'parent_id');  //!!to cache ?
   }

@@ -11,7 +11,7 @@ class cBlocks_Cache_Clear extends cBlock
     parent::init();
 
     $lIsClear = false;
-    paramPostGetGetCheck('cache_clear', VAR_TYPE_BOOLEAN, $lIsClear);
+    paramPostGetGetCheck('cache_clear', V_BOOLEAN, $lIsClear);
 
     if ($lIsClear)
     {

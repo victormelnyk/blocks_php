@@ -116,12 +116,12 @@ abstract class cBlocks_Auth_SignUp extends cBlock
 
   protected function paramsReadInternal(array &$lParams)
   {
-    $lResult = paramPostGetCheck('login', VAR_TYPE_STRING, $lParams['login']);
-    $lResult = paramPostGetCheck('name', VAR_TYPE_STRING, $lParams['name'])
+    $lResult = paramPostGetCheck('login', V_STRING, $lParams['login']);
+    $lResult = paramPostGetCheck('name', V_STRING, $lParams['name'])
       && $lResult;
-    $lResult = paramPostGetCheck('password', VAR_TYPE_STRING,
+    $lResult = paramPostGetCheck('password', V_STRING,
       $lParams['password']) && $lResult;
-    $lResult = paramPostGetCheck('password_confirm', VAR_TYPE_STRING,
+    $lResult = paramPostGetCheck('password_confirm', V_STRING,
       $lParams['password_confirm']) && $lResult;
 
     return $lResult;

@@ -36,15 +36,15 @@ class cRecordsetTreeAdaptationHelper
   public static function process(&$aRecordset, $aIdFildName,
     $aParentIdFieldName)
   {
-    $lList = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
+    $lList = new NamedIndexedList();
 
     for ($i = 0, $l = count($aRecordset); $i < $l; $i++)
     {
       $lRecord = $aRecordset[$i];
 
-      $lId = arrayValueGet($lRecord, $aIdFildName);
+      $lId = getArrayValue($lRecord, $aIdFildName);
 
-      if (!arrayValueGetCheck($lRecord, $aParentIdFieldName, $lParentId))
+      if (!getCheckArrayValue($lRecord, $aParentIdFieldName, $lParentId))
         $lParentId = 0;
 
       $lList->add($lId, new cRecordsetTreeAdaptationItem($lParentId, $lRecord));

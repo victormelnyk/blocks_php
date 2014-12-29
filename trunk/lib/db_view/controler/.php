@@ -18,7 +18,7 @@ abstract class cOptionBase
 
   public function loadFromXml($aXmlNode)
   {
-    $this->title = $aXmlNode->attrs->nextGetByN('Title')->getS();
+    $this->title = $aXmlNode->attrs->getNextByN('Title')->getS();
   }
 
   public function toArray(&$aArray)
@@ -36,7 +36,7 @@ abstract class cOptionsBase
 
   public function __construct()
   {
-    $this->options = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
+    $this->options = new NamedIndexedList();
   }
 
   abstract public function loadFromXml($aXmlNode);
@@ -78,37 +78,37 @@ class cFilterOptionBase extends cOptionBase
   {
     parent::loadFromXml($aXmlNode);
 
-    $this->type = $aXmlNode->attrs->nextGetByN('Type')->getS();
+    $this->type = $aXmlNode->attrs->getNextByN('Type')->getS();
 
-    if ($aXmlNode->attrs->nextGetCheckByN('InputType', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('InputType', $lAttr))
       $this->inputType = $lAttr->getS();
     else
       $this->inputType = inputTypeByVarType($this->type);
 
-    if ($aXmlNode->attrs->nextGetCheckByN('SqlSource', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('SqlSource', $lAttr))
       $this->sqlSource = $lAttr->getS();
     else
-    if ($aXmlNode->attrs->nextGetCheckByN('SqlTemplate', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('SqlTemplate', $lAttr))
       $this->sqlTemplate = $lAttr->getS();
     else
       throw new Exception('SqlSource or SqlTemplate must be set for filter'.
         'option');
 
-    if ($aXmlNode->attrs->nextGetCheckByN('IsKey', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('IsKey', $lAttr))
       $this->isKey = $lAttr->getB();
 
-    if ($aXmlNode->attrs->nextGetCheckByN('IsRequired', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('IsRequired', $lAttr))
       $this->isRequired = $lAttr->getB();
 
-    if ($aXmlNode->attrs->nextGetCheckByN('IsReadOnly', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('IsReadOnly', $lAttr))
       $this->isReadOnly = $lAttr->getB();
 
-    if ($aXmlNode->attrs->nextGetCheckByN('UseInOrder', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('UseInOrder', $lAttr))
       $this->useInOrder = $lAttr->getB();
 
     if ($this->inputType == INPUT_TYPE_SELECT)
       $this->posibleValuesSql =
-        $aXmlNode->nodes->nextGetByN('PosibleValuesSql')->getS();
+        $aXmlNode->nodes->getNextByN('PosibleValuesSql')->getS();
   }
 
   public function toArray(&$aArray)
@@ -135,7 +135,7 @@ class cFilterOptionEqual extends cFilterOptionBase
     else
       $aSqlList[] = $this->sqlSource.' = :'.$this->name;
 
-    if ($this->type == VAR_TYPE_BOOLEAN)
+    if ($this->type == V_BOOLEAN)
       $aParams[$this->name] = $this->value ? 1 : 0;
     else
       $aParams[$this->name] = $this->value;
@@ -145,7 +145,7 @@ class cFilterOptionEqual extends cFilterOptionBase
   {
     parent::loadFromXml($aXmlNode);
 
-    if ($aXmlNode->attrs->nextGetCheckByN('SessionParamName', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('SessionParamName', $lAttr))
     {
       eAssert($this->isReadOnly, 'ReadOnly must be set for FilterOption: "'.
         $this->name.'" because SessionParamName is set');
@@ -154,7 +154,7 @@ class cFilterOptionEqual extends cFilterOptionBase
         $this->value);
     }
 
-    if ($aXmlNode->attrs->nextGetCheckByN('DefaultValue', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('DefaultValue', $lAttr))
     {
       if (!$this->isValueExist)
       {
@@ -210,7 +210,7 @@ class cFilterOptionEqual extends cFilterOptionBase
 
     for ($i = 0, $l = count($this->posibleValues); $i < $l; $i++)
       $this->posibleValues[$i]['is_active'] =
-        (arrayValueGetTyped($this->posibleValues[$i], 'id', VAR_TYPE_INTEGER)
+        (getArrayValueTyped($this->posibleValues[$i], 'id', V_INTEGER)
           == $this->value);
   }
 }
@@ -267,12 +267,12 @@ class cFilterOptionRange extends cFilterOptionBase
 
   private function defaultValueGetCheck($aXmlNode, $aName, &$aValue)
   {
-    if (!$aXmlNode->attrs->nextGetCheckByN($aName, $lAttr))
+    if (!$aXmlNode->attrs->getCheckNextByN($aName, $lAttr))
       return false;
 
-    if ($this->type == VAR_TYPE_DATE)
+    if ($this->type == V_DATE)
     {
-      $lValue = $lAttr->getByType(VAR_TYPE_STRING);
+      $lValue = $lAttr->getByType(V_STRING);
 
       switch ($lValue) {
       case 'today':
@@ -281,14 +281,14 @@ class cFilterOptionRange extends cFilterOptionBase
       case 'first day of this month':
         $lDate = new DateTime('NOW', new DateTimeZone("UTC"));
         $lDate->modify('first day of this month');
-        $aValue = $lDate->format('Y-m-d ');
+        $aValue = $lDate->format('Y-m-d');
         return true;
       }
     }
     else//!!case
-    if ($this->type == VAR_TYPE_DATETIME)
+    if ($this->type == V_DATETIME)
     {
-      $lValue = $lAttr->getByType(VAR_TYPE_STRING);
+      $lValue = $lAttr->getByType(V_STRING);
 
       $lDate = new DateTime('NOW', new DateTimeZone("UTC"));
       $lDate->modify($lValue);
@@ -393,12 +393,12 @@ class cFilter extends cOptionsBase
 
   public function loadFromXml($aXmlNode)
   {
-    if ($aXmlNode->attrs->nextGetCheckByN('FilterIsEmpty', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('FilterIsEmpty', $lAttr))
       $this->filterIsEmpty = $lAttr->getS();
 
-    while ($aXmlNode->nodes->nextGetCheck($lFilterNode))
+    while ($aXmlNode->nodes->getCheckNext($lFilterNode))
     {
-      $lOptionType = $lFilterNode->attrs->nextGetByN('OptionType')->getS();
+      $lOptionType = $lFilterNode->attrs->getNextByN('OptionType')->getS();
 
       switch ($lOptionType) {
       case self::FILTER_OPTION_TYPE_EQUAL:
@@ -487,7 +487,7 @@ class cOrderOption extends cOptionBase
   {
     parent::loadFromXml($aXmlNode);
 
-    $this->sqlSource = $aXmlNode->attrs->nextGetByN('SqlSource')->getS();
+    $this->sqlSource = $aXmlNode->attrs->getNextByN('SqlSource')->getS();
   }
 
   public function toArray(&$aArray)
@@ -529,7 +529,7 @@ class cOrder extends cOptionsBase
 
   public function loadFromXml($aXmlNode)
   {
-    while ($aXmlNode->nodes->nextGetCheck($lOptionNode))
+    while ($aXmlNode->nodes->getCheckNext($lOptionNode))
     {
       $lOption = new cOrderOption($this, $lOptionNode->name);
       $lOption->loadFromXml($lOptionNode);
@@ -546,18 +546,18 @@ class cOrder extends cOptionsBase
     }
     else
     {
-      $this->paramName         = $aXmlNode->attrs->nextGetByN('ParamName')->getS();
-      $this->defaultOptionName = $aXmlNode->attrs->nextGetByN('DefaultOptionName')->getS();
+      $this->paramName         = $aXmlNode->attrs->getNextByN('ParamName')->getS();
+      $this->defaultOptionName = $aXmlNode->attrs->getNextByN('DefaultOptionName')->getS();
     }
 
     $lAttr = null;
 
-    if ($aXmlNode->attrs->nextGetCheckByN('DirectionParamName', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('DirectionParamName', $lAttr))
       $this->directionParamName = $lAttr->getS();
     else
       $this->isReadOnlyDirection = true;
 
-    if ($aXmlNode->attrs->nextGetCheckByN('DirectionIsDesc', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('DirectionIsDesc', $lAttr))
       $this->isDesc = $lAttr->getB();
 
     $this->isInitialized = true;
@@ -569,7 +569,7 @@ class cOrder extends cOptionsBase
       return;
 
     if ($this->isReadOnly
-      || !paramPostGetGetCheck($this->paramName, VAR_TYPE_STRING, $lOptionName))
+      || !paramPostGetGetCheck($this->paramName, V_STRING, $lOptionName))
       $lOptionName = $this->defaultOptionName;
 
     $this->currentOptionName  = $lOptionName;
@@ -577,7 +577,7 @@ class cOrder extends cOptionsBase
     $this->currentOptionTitle = $this->currentOption->title;
 
     if (!$this->isReadOnlyDirection
-      && paramPostGetGetCheck($this->directionParamName, VAR_TYPE_BOOLEAN,
+      && paramPostGetGetCheck($this->directionParamName, V_BOOLEAN,
       $lDirectionParamValue))
       $this->isDesc = $lDirectionParamValue;
   }
@@ -611,7 +611,7 @@ class cLimitOption extends cOptionBase
   {
     parent::loadFromXml($aXmlNode);
 
-    $this->value = $aXmlNode->attrs->nextGetByN('Value')->getI();
+    $this->value = $aXmlNode->attrs->getNextByN('Value')->getI();
   }
 
   public function toArray(&$aArray)
@@ -642,7 +642,7 @@ class cLimit extends cOptionsBase
     $lOptionCount = $aXmlNode->nodes->count();
     eAssert($lOptionCount > 0, 'LimitOptionCount must be greater than 0');
 
-    while ($aXmlNode->nodes->nextGetCheck($lOptionNode))
+    while ($aXmlNode->nodes->getCheckNext($lOptionNode))
     {
       $lOption = new cLimitOption($this, $lOptionNode->name);
       $lOption->loadFromXml($lOptionNode);
@@ -655,13 +655,13 @@ class cLimit extends cOptionsBase
     }
     else
     {
-      $this->paramName         = $aXmlNode->attrs->nextGetByN('ParamName')->getS();
-      $this->defaultOptionName = $aXmlNode->attrs->nextGetByN('DefaultOptionName')->getS();
+      $this->paramName         = $aXmlNode->attrs->getNextByN('ParamName')->getS();
+      $this->defaultOptionName = $aXmlNode->attrs->getNextByN('DefaultOptionName')->getS();
     }
 
     $lAttr = null;
 
-    if ($aXmlNode->attrs->nextGetCheckByN('PageNoParamName', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('PageNoParamName', $lAttr))
       $this->pageNoParamName = $lAttr->getS();
     else
       $this->isReadOnlyPageNo = true;
@@ -675,7 +675,7 @@ class cLimit extends cOptionsBase
       return;
 
     if ($this->isReadOnly
-      || !paramPostGetGetCheck($this->paramName, VAR_TYPE_STRING, $lLimitParam))
+      || !paramPostGetGetCheck($this->paramName, V_STRING, $lLimitParam))
       $lLimitParam = $this->defaultOptionName;
 
     $this->currentOptionName  = $lLimitParam;
@@ -684,7 +684,7 @@ class cLimit extends cOptionsBase
     $this->currentOptionValue = $this->currentOption->value;
 
     if (!$this->isReadOnlyPageNo
-      && paramPostGetGetCheck($this->pageNoParamName, VAR_TYPE_INTEGER,
+      && paramPostGetGetCheck($this->pageNoParamName, V_INTEGER,
         $lPageNoParam))
       $this->pageNo = ($lPageNoParam > 0 ? $lPageNoParam : 1);
   }
@@ -802,7 +802,7 @@ class cBlocks_DbView_Controler extends cBlocks_Sys_NamedList
       $lSql = 'SELECT COUNT(*) as count'.CRLF.$lSql;
 
       $this->settings->db->executeValue($lSql, 'count', $this->recordCount,
-        $this->sqlParams, VAR_TYPE_INTEGER);
+        $this->sqlParams, V_INTEGER);
 
       $this->isRecordCountRead = true;
     }
@@ -853,37 +853,37 @@ class cBlocks_DbView_Controler extends cBlocks_Sys_NamedList
   {
     parent::settingsRead($aXmlNode);
 
-    if ($aXmlNode->nodes->nextGetCheckByN('RecordPostProcessFunctions', $lNode))
-      while ($lNode->nodes->nextGetCheck($lFunctionNode))
+    if ($aXmlNode->nodes->getCheckNextByN('RecordPostProcessFunctions', $lNode))
+      while ($lNode->nodes->getCheckNext($lFunctionNode))
         $this->recordPPFuncs[] = $lFunctionNode->name;
 
-    if ($aXmlNode->nodes->nextGetCheckByN('RecordsetPostProcessFunctions',
+    if ($aXmlNode->nodes->getCheckNextByN('RecordsetPostProcessFunctions',
       $lNode))
-      while ($lNode->nodes->nextGetCheck($lFunctionNode))
+      while ($lNode->nodes->getCheckNext($lFunctionNode))
         $this->recordsetPPFuncs[] = $lFunctionNode->name;
 
-    if ($aXmlNode->nodes->nextGetCheckByN('Filter', $lNode))
+    if ($aXmlNode->nodes->getCheckNextByN('Filter', $lNode))
       $this->filter->loadFromXml($lNode);
 
-    if ($aXmlNode->nodes->nextGetCheckByN('Order', $lNode))
+    if ($aXmlNode->nodes->getCheckNextByN('Order', $lNode))
     {
       $this->order->loadFromFilter($this->filter);
       $this->order->loadFromXml($lNode);
     }
 
-    if ($aXmlNode->nodes->nextGetCheckByN('Limit', $lNode))
+    if ($aXmlNode->nodes->getCheckNextByN('Limit', $lNode))
       $this->limit->loadFromXml($lNode);
 
-    if ($aXmlNode->nodes->nextGetCheckByN('FieldTypes', $lNode))
-      while ($lNode->nodes->nextGetCheck($lFilelTypeNode))
+    if ($aXmlNode->nodes->getCheckNextByN('FieldTypes', $lNode))
+      while ($lNode->nodes->getCheckNext($lFilelTypeNode))
       {
         $lFieldType = $lFilelTypeNode->getS();
         varTypeCheckAssert($lFieldType);
         $this->fieldTypes[$lFilelTypeNode->name] = $lFieldType;
       }
 
-    if ($aXmlNode->nodes->nextGetCheckByN('Params', $lNode))
-      while ($lNode->nodes->nextGetCheck($lParamNode))
+    if ($aXmlNode->nodes->getCheckNextByN('Params', $lNode))
+      while ($lNode->nodes->getCheckNext($lParamNode))
         $this->params[$lParamNode->name] = $lParamNode->getS();
   }
 

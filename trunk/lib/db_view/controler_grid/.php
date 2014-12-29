@@ -10,7 +10,7 @@ class cColCountOption extends cOptionBase
   {
     parent::loadFromXml($aXmlNode);
 
-    $this->value = $aXmlNode->attrs->nextGetByN('Value')->getI();
+    $this->value = $aXmlNode->attrs->getNextByN('Value')->getI();
   }
 }
 
@@ -25,7 +25,7 @@ class cColCount extends cOptionsBase
 
   public function loadFromXml($aXmlNode)
   {
-    while ($aXmlNode->nodes->nextGetCheck($lColCountNode))
+    while ($aXmlNode->nodes->getCheckNext($lColCountNode))
     {
       $lOption = new cColCountOption($this, $lColCountNode->name);
       $lOption->loadFromXml($lColCountNode);
@@ -38,8 +38,8 @@ class cColCount extends cOptionsBase
     }
     else
     {
-      $this->paramName         = $aXmlNode->attrs->nextGetByN('ParamName')->getS();
-      $this->defaultOptionName = $aXmlNode->attrs->nextGetByN('DefaultOptionName')->getS();
+      $this->paramName         = $aXmlNode->attrs->getNextByN('ParamName')->getS();
+      $this->defaultOptionName = $aXmlNode->attrs->getNextByN('DefaultOptionName')->getS();
     }
 
     $this->isInitialized = true;
@@ -51,7 +51,7 @@ class cColCount extends cOptionsBase
       return;
 
     if ($this->isReadOnly
-      || !paramGetGetCheck($this->paramName, VAR_TYPE_STRING, $lColCountParam))
+      || !paramGetGetCheck($this->paramName, V_STRING, $lColCountParam))
       $lColCountParam = $this->defaultOptionName;
 
     $this->currentOptionName  = $lColCountParam;
@@ -88,7 +88,7 @@ class cBlocks_DbView_ControlerGrid extends cBlocks_DbView_Controler
   {
     parent::settingsRead($aXmlNode);
 
-    if ($aXmlNode->nodes->nextGetCheckByN('ColCount', $lNode))
+    if ($aXmlNode->nodes->getCheckNextByN('ColCount', $lNode))
       $this->colCount->loadFromXml($lNode);
   }
 }

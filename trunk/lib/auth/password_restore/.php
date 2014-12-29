@@ -49,7 +49,7 @@ abstract class cBlocks_Auth_PasswordRestore extends cBlock
 
   private function paramsReadCheck(&$aUserId, &$aLogin)
   {
-    $lResult = paramPostGetGetCheck('login', VAR_TYPE_STRING, $aLogin);
+    $lResult = paramPostGetGetCheck('login', V_STRING, $aLogin);
 
     if ($lResult && !$this->userIdGetCheck($aLogin, $aUserId))
     {

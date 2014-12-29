@@ -42,7 +42,7 @@ abstract class cLogonContext extends cContext
   {
     $lLogonLevel = self::NO_LOGON_LEVEL;
 
-    if ($aXmlNode->attrs->nextGetCheckByN('DefaultLogonLevel',
+    if ($aXmlNode->attrs->getCheckNextByN('DefaultLogonLevel',
       $lLogonLevelAttr))
     {
       $lLogonLevel = $lLogonLevelAttr->getS();
@@ -59,13 +59,13 @@ abstract class cLogonContext extends cContext
     if ($this->loginParamsReadCheck($lUserLogin, $lUserPassword))
       $this->login($lUserLogin, $lUserPassword, $this->homePage);
     else
-    if (paramPostGetGetCheck('user_logout', VAR_TYPE_STRING, $lIsLogOut))
+    if (paramPostGetGetCheck('user_logout', V_STRING, $lIsLogOut))
     {
       if ($lIsLogOut)
         $this->logOut();
     }
     else
-    if (paramSessionGetCheck($this->page->appName.'_isLogged', VAR_TYPE_BOOLEAN,
+    if (paramSessionGetCheck($this->page->appName.'_isLogged', V_BOOLEAN,
         $lIsLogged) && $lIsLogged
     )
       $this->readFromSession();
@@ -104,11 +104,11 @@ abstract class cLogonContext extends cContext
 
     if ($this->isLogged)
     {
-      if (!(arrayValueGetCheck($_SERVER, 'HTTP_X_REQUESTED_WITH',
+      if (!(getCheckArrayValue($_SERVER, 'HTTP_X_REQUESTED_WITH',
           $lRequestCreator)
         && ($lRequestCreator == 'XMLHttpRequest')))//!! to AK need test
         header('Location: '.($aRedirectTo ? $aRedirectTo
-          : arrayValueGet($_SERVER, 'REQUEST_URI')));
+          : getArrayValue($_SERVER, 'REQUEST_URI')));
      /*!! to AK need test
       for AJAX
       [HTTP_X_REQUESTED_WITH] => XMLHttpRequest
@@ -125,8 +125,8 @@ abstract class cLogonContext extends cContext
 
   protected function loginParamsReadCheck(&$aUserLogin, &$aUserPassword)
   {
-    return paramPostGetGetCheck('user_login', VAR_TYPE_STRING, $aUserLogin)
-      && paramPostGetGetCheck('user_password', VAR_TYPE_STRING, $aUserPassword);//!! use object params
+    return paramPostGetGetCheck('user_login', V_STRING, $aUserLogin)
+      && paramPostGetGetCheck('user_password', V_STRING, $aUserPassword);//!! use object params
   }
 
   protected function loginPageShow()
@@ -166,7 +166,7 @@ abstract class cLogonContext extends cContext
 
   private function loginTryCountInc()
   {
-    if (!paramSessionGetCheck('loginTryCount', VAR_TYPE_INTEGER,
+    if (!paramSessionGetCheck('loginTryCount', V_INTEGER,
       $lLoginTryCount))
       $lLoginTryCount = 0;
 
@@ -181,8 +181,8 @@ abstract class cLogonContext extends cContext
 
   private function logonLevelCompare($aFirstValue, $aSecondValue)
   {
-    if (!arrayValueGetCheck($this->logonLevels, $aFirstValue, $lFirstValueIndex)
-      || !arrayValueGetCheck($this->logonLevels, $aSecondValue, $lSecondValueIndex)
+    if (!getCheckArrayValue($this->logonLevels, $aFirstValue, $lFirstValueIndex)
+      || !getCheckArrayValue($this->logonLevels, $aSecondValue, $lSecondValueIndex)
     )
       return COMPARE_TYPE_LESS;
 
@@ -197,10 +197,10 @@ abstract class cLogonContext extends cContext
 
   private function logonLevelsRead(cXmlNode $aXmlNode)
   {
-    $lLogonLevelsNode = $aXmlNode->nodes->nextGetByN('LogonLevels');
+    $lLogonLevelsNode = $aXmlNode->nodes->getNextByN('LogonLevels');
     $lIndex = 0;
 
-    while ($lLogonLevelsNode->nodes->nextGetCheck($lLogonLevelNode))
+    while ($lLogonLevelsNode->nodes->getCheckNext($lLogonLevelNode))
     {
       $this->logonLevels[$lLogonLevelNode->name] = $lIndex;
       $lIndex++;
@@ -211,7 +211,7 @@ abstract class cLogonContext extends cContext
   {
     $this->clear();
     header('Location: '.($this->homePage ? $this->homePage
-      : arrayValueGet($_SERVER, 'PHP_SELF'))
+      : getArrayValue($_SERVER, 'PHP_SELF'))
     );
   }
 
@@ -243,10 +243,10 @@ abstract class cLogonContext extends cContext
 
   protected function readFromSession()
   {
-    $this->logonLevel = paramSessionGet('logonLevel', VAR_TYPE_STRING);
-    $this->userId     = paramSessionGet('userId',     VAR_TYPE_INTEGER);
-    $this->userLogin  = paramSessionGet('userLogin',  VAR_TYPE_STRING);
-    $this->userName   = paramSessionGet('userName',   VAR_TYPE_STRING);
+    $this->logonLevel = paramSessionGet('logonLevel', V_STRING);
+    $this->userId     = paramSessionGet('userId',     V_INTEGER);
+    $this->userLogin  = paramSessionGet('userLogin',  V_STRING);
+    $this->userName   = paramSessionGet('userName',   V_STRING);
     $this->isLogged   = true;
   }
 

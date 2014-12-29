@@ -18,14 +18,14 @@ class cDbFormOption extends cFormOption
   {
     parent::__construct($aList, $aXmlNode);
 
-    $this->sqlField = $aXmlNode->attrs->nextGetByN('SqlField')->getS();
+    $this->sqlField = $aXmlNode->attrs->getNextByN('SqlField')->getS();
 
-    if ($aXmlNode->attrs->nextGetCheckByN('IsKey', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('IsKey', $lAttr))
       $this->isKey = $lAttr->getB();
 
     if ($this->inputType == INPUT_TYPE_SELECT)
       $this->posibleValuesSql =
-        $aXmlNode->nodes->nextGetByN('PosibleValuesSql')->getS();
+        $aXmlNode->nodes->getNextByN('PosibleValuesSql')->getS();
   }
 
   public function toArray(&$aArray)
@@ -46,7 +46,7 @@ class cDbFormOption extends cFormOption
 
     for ($i = 0, $l = count($lRecordset); $i < $l; $i++)
       $lRecordset[$i]['is_active'] =
-        (arrayValueGetTyped($lRecordset[$i], 'id', VAR_TYPE_INTEGER)
+        (getArrayValueTyped($lRecordset[$i], 'id', V_INTEGER)
           == $aCurrentValue);
 
     $this->value = $lRecordset;
@@ -95,7 +95,7 @@ class cDbForm extends cForm
   {
     parent::loadFromXml($aXmlNode);
 
-    $this->tableName = $aXmlNode->attrs->nextGetByN('TableName')->getS();
+    $this->tableName = $aXmlNode->attrs->getNextByN('TableName')->getS();
   }
 
   public function loadValueFromRecordset($aRecordset)
@@ -108,7 +108,7 @@ class cDbForm extends cForm
       $lOption = $this->options->getByI($i);
 
       if (!$lOption->isKey)
-        $lOption->valueSet(arrayValueGet($lRecord, $lOption->sqlField));
+        $lOption->valueSet(getArrayValue($lRecord, $lOption->sqlField));
     }
   }
 
@@ -132,10 +132,10 @@ class cDbForm extends cForm
   {
     parent::paramsRead();
 
-    if (paramPostGetGetCheck('edit_mode', VAR_TYPE_STRING, $lValue))
+    if (paramPostGetGetCheck('edit_mode', V_STRING, $lValue))
       $this->editMode = $lValue;
 
-    if (paramPostGetGetCheck('callback_url', VAR_TYPE_STRING, $lValue))
+    if (paramPostGetGetCheck('callback_url', V_STRING, $lValue))
       $this->callbackUrl = $lValue;
   }
 
@@ -180,7 +180,7 @@ class cDbForm extends cForm
       if ($lOption->isKey && $lOption->value === cDbBase::BAD_IDENTITY_ID)
         continue;
 
-      if ($lOption->type == VAR_TYPE_BOOLEAN)
+      if ($lOption->type == V_BOOLEAN)
         $aSqlParams[$lOption->sqlField] = $lOption->value ? 'TRUE' : 'FALSE';//!!bag in PDO PG
       else
       if ($lOption->inputType == INPUT_TYPE_FILE)
@@ -220,7 +220,7 @@ class cDbForm extends cForm
         continue;
       }
 
-      if (($lOption->type == VAR_TYPE_BOOLEAN) && $lOption->isValueExist)
+      if (($lOption->type == V_BOOLEAN) && $lOption->isValueExist)
         $aSqlParams[$lOption->sqlField] = $lOption->value ? 'TRUE' : 'FALSE';//!!bag in PDO PG
       else
       if ($lOption->inputType == INPUT_TYPE_FILE)
