@@ -42,11 +42,11 @@ class cPageSettings
   {
     if ($this->isTest)
     {
-      if (!paramPostGetSessionGetCheck('is_cache', VAR_TYPE_BOOLEAN,
+      if (!paramPostGetSessionGetCheck('is_cache', V_BOOLEAN,
         $this->isCache))
         $this->isCache = false;
 
-      paramPostGetSessionGetCheck('is_profile', VAR_TYPE_BOOLEAN,
+      paramPostGetSessionGetCheck('is_profile', V_BOOLEAN,
         $this->isProfile);
 
       if ($this->isProfile)
@@ -124,9 +124,9 @@ class cParams
 
   public function __construct()
   {
-    $this->sys = new cNameValueLinearNamedIndexedList(
-      cNamedList::DUPLICATION_TYPE_ERROR);
-    $this->blocks = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
+    $this->sys = new NameValueLinearNamedIndexedList(
+      );
+    $this->blocks = new NamedIndexedList();
 
     $this->load();
   }
@@ -151,8 +151,8 @@ class cParams
 
           if (!$this->blocks->getCheck($lBlockName, $lBlockParams))
             $lBlockParams = $this->blocks->add($lBlockName,
-              new cNameValueLinearNamedIndexedList(
-                cNamedList::DUPLICATION_TYPE_ERROR));
+              new NameValueLinearNamedIndexedList(
+                ));
 
           $lBlockParamsList[$i] = $lBlockParams;
         }
@@ -160,7 +160,7 @@ class cParams
       }
       else
       {
-        $lParam = new cNameValueObject($lName, $lValue);
+        $lParam = new NameValueObject($lName, $lValue);
         if (count($lBlockParamsList))
           for ($i = 0, $l = count($lBlockParamsList); $i < $l; $i++)
             $lBlockParamsList[$i]->addNameValueObject($lParam);
@@ -243,11 +243,11 @@ abstract class cMetaData
   public function __construct($aAppName, $aName, cPage $aPage, cCache $aCache,
     cPageSettings $aSettings)
   {
-    $this->scripts = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
-    $this->styles  = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
+    $this->scripts = new NamedIndexedList();
+    $this->styles  = new NamedIndexedList();
 
-    $this->tagsMl = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
-    $this->tags   = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
+    $this->tagsMl = new NamedIndexedList();
+    $this->tags   = new NamedIndexedList();
 
     $this->appName  = $aAppName;
     $this->name     = $aName;
@@ -286,46 +286,46 @@ abstract class cMetaData
     for ($i = 1, $l = count($this->configXmls); $i < $l; $i++)
       $lXmlDocument->update($this->configXmls[$i]);
 
-    $lXmlDocument->nodes->positionClear();
+    $lXmlDocument->nodes->clearPosition();
 
-    if ($lXmlDocument->nodes->nextGetCheckByN('Inherited', $lInheritedNode))
-      $lXmlDocument->nodes->currDeleteByN('Inherited');
+    if ($lXmlDocument->nodes->getCheckNextByN('Inherited', $lInheritedNode))
+      $lXmlDocument->nodes->deleteCurrByN('Inherited');
 
-    if ($lXmlDocument->nodes->nextGetCheckByN('Localization',
+    if ($lXmlDocument->nodes->getCheckNextByN('Localization',
       $lLocalizationNode))
     {
-      if ($lLocalizationNode->attrs->nextGetCheckByN('DefaultLanguage',
+      if ($lLocalizationNode->attrs->getCheckNextByN('DefaultLanguage',
         $lDefaultLanguageAttr))
         $this->defaultLanguage = $lDefaultLanguageAttr->getS();
 
-      if ($lLocalizationNode->nodes->nextGetCheckByN('FilesByMl',
+      if ($lLocalizationNode->nodes->getCheckNextByN('FilesByMl',
         $lFilesByMlNode))
-        while ($lFilesByMlNode->nodes->nextGetCheckByN('F', $lFileByMlNode))
+        while ($lFilesByMlNode->nodes->getCheckNextByN('F', $lFileByMlNode))
           $this->filesByMl[$lFileByMlNode->getS()] = true;
 
-      if ($lLocalizationNode->nodes->nextGetCheckByN('Tags', $lTags))
-        while ($lTags->nodes->nextGetCheck($lTag))
+      if ($lLocalizationNode->nodes->getCheckNextByN('Tags', $lTags))
+        while ($lTags->nodes->getCheckNext($lTag))
         {
-          while ($lTag->nodes->nextGetCheck($lValueMl))
+          while ($lTag->nodes->getCheckNext($lValueMl))
           {
             if (!$this->tagsMl->getCheck($lValueMl->name, $lValuesMl))
             {
-              $lValuesMl = new cNamedIndexedList(//!! do not create
-                cNamedList::DUPLICATION_TYPE_ERROR);
+              $lValuesMl = new NamedIndexedList(//!! do not create
+                );
               $this->tagsMl->add($lValueMl->name, $lValuesMl);
             }
             $lValuesMl->add($lTag->name, $lValueMl->getS());
           }
         }
 
-      $lXmlDocument->nodes->currDeleteByN('Localization');
+      $lXmlDocument->nodes->deleteCurrByN('Localization');
     }
 
-    if ($lXmlDocument->nodes->nextGetCheckByN('Tags', $lTags))
+    if ($lXmlDocument->nodes->getCheckNextByN('Tags', $lTags))
     {
-      while ($lTags->nodes->nextGetCheck($lTag))
+      while ($lTags->nodes->getCheckNext($lTag))
         $this->tags->add($lTag->name, $lTag->getS());
-      $lXmlDocument->nodes->currDeleteByN('Tags');
+      $lXmlDocument->nodes->deleteCurrByN('Tags');
     }
 
     if ($lXmlDocument->nodes->count() || $lXmlDocument->attrs->count())
@@ -343,11 +343,11 @@ abstract class cMetaData
 
   protected function configReadInternal(cXmlDocument $aXmlDocument)
   {
-    if ($aXmlDocument->nodes->nextGetCheckByN('Styles', $lStylesNode))
-      while ($lStylesNode->nodes->nextGetCheckByN('Style', $lStyleNode))
+    if ($aXmlDocument->nodes->getCheckNextByN('Styles', $lStylesNode))
+      while ($lStylesNode->nodes->getCheckNextByN('Style', $lStyleNode))
       {
         $lRelativeFlp = $lStyleNode->getS();
-        if ($lStyleNode->attrs->nextGetCheckByN('IsNotCollect',
+        if ($lStyleNode->attrs->getCheckNextByN('IsNotCollect',
           $lAttrIsNotCollect))
           $lIsNotCollect = $lAttrIsNotCollect->getB();
         else
@@ -356,11 +356,11 @@ abstract class cMetaData
           $lIsNotCollect));
       }
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('Scripts', $lScriptsNode))
-      while ($lScriptsNode->nodes->nextGetCheckByN('Script', $lScriptNode))
+    if ($aXmlDocument->nodes->getCheckNextByN('Scripts', $lScriptsNode))
+      while ($lScriptsNode->nodes->getCheckNextByN('Script', $lScriptNode))
       {
         $lRelativeFlp = $lScriptNode->getS();
-        if ($lScriptNode->attrs->nextGetCheckByN('IsNotCollect',
+        if ($lScriptNode->attrs->getCheckNextByN('IsNotCollect',
           $lAttrIsNotCollect))
           $lIsNotCollect = $lAttrIsNotCollect->getB();
         else
@@ -369,18 +369,18 @@ abstract class cMetaData
           $lIsNotCollect));
       }
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('InitScripts', $lInitScriptsNode))
-      while ($lInitScriptsNode->nodes->nextGetCheckByN('InitScript',
+    if ($aXmlDocument->nodes->getCheckNextByN('InitScripts', $lInitScriptsNode))
+      while ($lInitScriptsNode->nodes->getCheckNextByN('InitScript',
         $lInitScriptNode))
         $this->initScript .= mb_trim($lInitScriptNode->getS());
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('Settings', $lSettingsNode))
+    if ($aXmlDocument->nodes->getCheckNextByN('Settings', $lSettingsNode))
     {
       if (!$lSettingsNode->nodes->count() && !$lSettingsNode->attrs->count())
         return;
 
       $this->settingsXmlNode = $lSettingsNode;
-      $aXmlDocument->nodes->currDeleteByN('Settings');
+      $aXmlDocument->nodes->deleteCurrByN('Settings');
     }
   }
 
@@ -399,7 +399,7 @@ abstract class cMetaData
     return $lResult;
   }
 
-  private function fileDataAddToListIfExist(cNamedIndexedList $aList,
+  private function fileDataAddToListIfExist(NamedIndexedList $aList,
     $aRelativeFlp)
   {
     if ($this->fileFirstExistFlpGetCheck($aRelativeFlp, $lFlp))
@@ -506,8 +506,8 @@ abstract class cMetaData
   {
     $lResult = array();
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('Inherited', $lInheritedsNode))
-      while ($lInheritedsNode->nodes->nextGetCheck($lInheritedNode))
+    if ($aXmlDocument->nodes->getCheckNextByN('Inherited', $lInheritedsNode))
+      while ($lInheritedsNode->nodes->getCheckNext($lInheritedNode))
         $lResult[] = $lInheritedNode->name;
 
     return $lResult;
@@ -619,8 +619,8 @@ abstract class cMetaData
       $aCacheData['settingsXml'] = $this->settingsXmlNode->saveToString();
   }
 
-  public function scriptsGet(cNamedIndexedList $aScripts,
-    cNamedIndexedList $aNotCollectedScripts)
+  public function scriptsGet(NamedIndexedList $aScripts,
+    NamedIndexedList $aNotCollectedScripts)
   {
     for ($i = 0, $l = $this->scripts->count(); $i < $l; $i++)
     {
@@ -635,7 +635,7 @@ abstract class cMetaData
     }
   }
 
-  public function scriptsDefaultGet(cNamedIndexedList $aScripts)
+  public function scriptsDefaultGet(NamedIndexedList $aScripts)
   {
     $this->fileDataAddToListIfExist($aScripts, 'web/.js');
   }
@@ -728,13 +728,13 @@ abstract class cMetaData
     return $lResult;
   }
 
-  public function stylesDefaultGet(cNamedIndexedList $aStyles)
+  public function stylesDefaultGet(NamedIndexedList $aStyles)
   {
     $this->fileDataAddToListIfExist($aStyles, 'web/.css');
   }
 
-  public function stylesGet(cNamedIndexedList $aStyles,
-    cNamedIndexedList $aNotCollectedStyles)
+  public function stylesGet(NamedIndexedList $aStyles,
+    NamedIndexedList $aNotCollectedStyles)
   {
     for ($i = 0, $l = $this->styles->count(); $i < $l; $i++)
     {
@@ -786,14 +786,14 @@ class cSet extends cMetaData
   {
     parent::configReadInternal($aXmlDocument);
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('Title', $lTitleNode))
+    if ($aXmlDocument->nodes->getCheckNextByN('Title', $lTitleNode))
       $this->title = $lTitleNode->getS();
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('Meta', $lMetaNode))
+    if ($aXmlDocument->nodes->getCheckNextByN('Meta', $lMetaNode))
       $this->meta = $lMetaNode->getS();
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('RunDirs', $lRunDirsNode))
-      while ($lRunDirsNode->nodes->nextGetCheck($lRunDirNode))
+    if ($aXmlDocument->nodes->getCheckNextByN('RunDirs', $lRunDirsNode))
+      while ($lRunDirsNode->nodes->getCheckNext($lRunDirNode))
         $this->runDirs[$lRunDirNode->name] = $lRunDirNode->getS();
   }
 
@@ -956,10 +956,10 @@ class cPage extends cMetaData
     $lSettings = self::settingsGet();
     $lSettings->init();
 
-    if (paramPostGetGetCheck('l', VAR_TYPE_STRING, $this->language))//!!use params logic
+    if (paramPostGetGetCheck('l', V_STRING, $this->language))//!!use params logic
       $_SESSION['language'] = $this->language;
     else
-    if (!paramSessionGetCheck('language', VAR_TYPE_STRING, $this->language))
+    if (!paramSessionGetCheck('language', V_STRING, $this->language))
       $this->language = $lSettings->defaultLanguage;
 
     $lCache = new cCache($lSettings->rootDir.$lAppName.'/tmp/cache/'.
@@ -971,7 +971,7 @@ class cPage extends cMetaData
 
     parent::__construct($lAppName, $lPageName, $this, $lCache, $lSettings);
 
-    $this->blocksAll = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
+    $this->blocksAll = new NamedIndexedList();
 
     if ($this->settings->context)
       $this->settings->context->pageSet($this);
@@ -1100,8 +1100,8 @@ class cPage extends cMetaData
 
   private function buildScripts()
   {
-    $lScripts = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
-    $lNotCollectedScripts = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
+    $lScripts = new NamedIndexedList();
+    $lNotCollectedScripts = new NamedIndexedList();
 
     $this->set->scriptsDefaultGet($lScripts);
     $this->set->scriptsGet($lScripts, $lNotCollectedScripts);
@@ -1131,8 +1131,8 @@ class cPage extends cMetaData
 
   private function buildStyles()
   {
-    $lStyles = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_NONE);//!!
-    $lNotCollectedStyles = new cNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
+    $lStyles = new NamedIndexedList(false);//!!
+    $lNotCollectedStyles = new NamedIndexedList(true);
 
     $this->set->stylesDefaultGet($lStyles);
     $this->set->stylesGet($lStyles, $lNotCollectedStyles);
@@ -1164,19 +1164,19 @@ class cPage extends cMetaData
   {
     parent::configReadInternal($aXmlDocument);
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('Title', $lTitleNode))
+    if ($aXmlDocument->nodes->getCheckNextByN('Title', $lTitleNode))
       $this->title = $lTitleNode->getS();
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('Meta', $lMetaNode))
+    if ($aXmlDocument->nodes->getCheckNextByN('Meta', $lMetaNode))
       $this->meta = $lMetaNode->getS();
 
-    if ($aXmlDocument->nodes->nextGetCheckByN('Blocks', $lBlocksNode))
-      while ($lBlocksNode->nodes->nextGetCheck($lBlockNode))
+    if ($aXmlDocument->nodes->getCheckNextByN('Blocks', $lBlocksNode))
+      while ($lBlocksNode->nodes->getCheckNext($lBlockNode))
       {
         $lBlockName     = $lBlockNode->name;
-        $lComponentName = $lBlockNode->attrs->nextGetByN('Component')->getS();
+        $lComponentName = $lBlockNode->attrs->getNextByN('Component')->getS();
 
-        if ($lBlockNode->attrs->nextGetCheckByN('Parent',
+        if ($lBlockNode->attrs->getCheckNextByN('Parent',
           $lParentBlockNameAttr))
           $lParentBlockName = $lParentBlockNameAttr->getS();
         else
@@ -1304,7 +1304,7 @@ class cPage extends cMetaData
     if ($this->settings->context && !$this->settings->context->validate())
       return;
 
-    if (paramPostGetGetCheck('blocks', VAR_TYPE_STRING, $lParam))//!!
+    if (paramPostGetGetCheck('blocks', V_STRING, $lParam))//!!
       $lResult = $this->buildByBlockNames(explode(',', $lParam));
     else
     {
@@ -1452,9 +1452,9 @@ abstract class cBlock extends cMetaData
     parent::configReadInternal($aXmlDocument);
 
     $lAttr = null;
-    if ($aXmlDocument->attrs->nextGetCheckByN('IsCache', $lAttr))
+    if ($aXmlDocument->attrs->getCheckNextByN('IsCache', $lAttr))
       $this->isCache = $lAttr->getB();
-    if ($aXmlDocument->attrs->nextGetCheckByN('IsBuildOnRequest', $lAttr))
+    if ($aXmlDocument->attrs->getCheckNextByN('IsBuildOnRequest', $lAttr))
       $this->isBuildOnRequest = $lAttr->getB();
   }
 
@@ -1627,8 +1627,8 @@ abstract class cBlock extends cMetaData
       $aCacheData['cacheHtml'] = $this->cacheHtml;
   }
 
-  public function scriptsGetRecursive(cNamedIndexedList $aScripts,
-    cNamedIndexedList $aNotCollectedScripts)
+  public function scriptsGetRecursive(NamedIndexedList $aScripts,
+    NamedIndexedList $aNotCollectedScripts)
   {
     $this->scriptsDefaultGet($aScripts);
     $this->scriptsGet($aScripts, $aNotCollectedScripts);
@@ -1637,8 +1637,8 @@ abstract class cBlock extends cMetaData
       $this->blocks[$i]->scriptsGetRecursive($aScripts, $aNotCollectedScripts);
   }
 
-  public function stylesGetRecursive(cNamedIndexedList $aStyles,
-    cNamedIndexedList $aNotCollectedStyles)
+  public function stylesGetRecursive(NamedIndexedList $aStyles,
+    NamedIndexedList $aNotCollectedStyles)
   {
     $this->stylesDefaultGet($aStyles);
     $this->stylesGet($aStyles, $aNotCollectedStyles);

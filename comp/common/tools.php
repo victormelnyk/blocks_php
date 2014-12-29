@@ -125,10 +125,10 @@ function getArrayValueTyped($array, $key, $type) {
 function getCheckArrayValue($array, $key, &$value) {
   $result = array_key_exists($key, $array);
   if ($result) {
-    $valueLocal = $array[$key];
-    $result = $valueLocal !== '';
+    $lValue = $array[$key];
+    $result = $lValue !== '';
     if ($result) {
-      $value = $valueLocal;
+      $value = $lValue;
     }
   }
   return $result;
@@ -141,6 +141,80 @@ function getCheckArrayValueTyped($array, $key, $type, &$value) {
   }
   return $result;
 }
+
+function insertBeforeArrayValue($array, $key, $value, $keyBefore) {
+  $lArray = array();
+  $inserted = false;
+  foreach($array as $lKey => $lValue) {
+    if ($lKey === $keyBefore) {
+      $lArray[$key] = $value;
+      $inserted = true;
+    }
+    $items[$lKey] = $lValue;
+  }
+  eAssert($inserted);
+  return $lArray;
+}
+
+function margeArray($array1, $array2) {
+  $result = $array1;
+  foreach ($array2 as $key => $value) {
+    $action = 'update';
+
+    if ((mb_strlen($key) > 3) && ($key[0] == '_') && ($key[2] == '-')) {
+      $keyParts = explode('-', $key);
+      $keyPartCount = count($keyParts);
+      eAssert($keyPartCount > 1);
+
+      switch ($keyParts[0]) {
+        case 'd':
+          eAssert($keyPartCount === 2);
+          $action = 'delete';
+          $key = $keyParts[1];
+          break;
+        case 'b':
+          eAssert($keyPartCount == 3);
+          $action = 'before';
+          $keyBefore = $keyParts[1];
+          $key = $keyParts[2];
+          break;
+        default:
+          raiseNotSupported('ActionPrefix', $keyParts[1]);
+          break;
+      }
+    }
+
+    switch ($action) {
+      case 'before':
+        $result = insertBeforeArrayValue($result, $key, $value, $keyBefore);
+        break;
+      case 'concat':
+        if (is_array($value)) {
+          eAssert(isset($value[0]), 'Array is not sequential');
+          $result[$key] = array_merge($result[$key], $value);
+        } else {
+          $result[$key] += $value;
+        }
+        break;
+      case 'delete':
+        unset($result[$key]);
+        break;
+      case 'update':
+        if (gettype($value) === 'array'
+          and !isset($value[0])
+          and isset($result[$key])) {
+          $result[$key] = margeArray($result[$key], $value);
+        } else {
+          $result[$key] = $value;
+        }
+        break;
+      default:
+        raiseNotSupported('Action', $action);
+    }
+  }
+  return $result;
+}
+
 //!files
 function fileToString($filePath) {
   if (!file_exists($filePath)) {
@@ -274,692 +348,253 @@ function tagsReplaceArray($str, $tagsValues) {
 }
 
 //!classes
-class cNamedList
-{
-  //!DUPLICATION_TYPE
-  const DUPLICATION_TYPE_NONE  = 'DUPLICATION_TYPE_NONE';//!!delete
-  const DUPLICATION_TYPE_ERROR = 'DUPLICATION_TYPE_ERROR';
+class NamedList {
+  private $items = null;
+  private $notSupportedDuplication = true;
 
-  private $items = array();
-
-  private $duplicationType = '';
-
-  public function __construct($aDuplicationType)
-  {
-    $this->duplicationType = $aDuplicationType;
+  public function __construct(array $items = array(), $notSupportedDuplication = true) {
+    $this->items = $items;
+    $this->notSupportedDuplication = $notSupportedDuplication;
   }
 
-  public function add($aName, $value)
-  {
-    $this->duplicationCheck($aName);
-    $this->items[$aName] = $value;
+  public function add($name, $value) {
+    $this->duplicationCheck($name);
+    $this->items[$name] = $value;
     return $value;
   }
 
-  public function count()
-  {
+  public function count() {
     return count($this->items);
   }
 
-  public function delete($aName)
-  {
-    unset($this->items[$aName]);
+  public function delete($name) {
+    unset($this->items[$name]);
   }
 
-  private function duplicationCheck($aName)
-  {
-    switch ($this->duplicationType) {
-    case self::DUPLICATION_TYPE_NONE:
-      break;
-    case self::DUPLICATION_TYPE_ERROR:
-      if ($this->exist($aName))
-        throw new Exception('Duplicated value by name: "'.$aName.'"');
-      break;
-    default:
-      throw new Exception('Not supported DuplicationType: "'.
-        $this->duplicationType.'"');
+  private function duplicationCheck($name) {
+    if ($this->notSupportedDuplication && $this->exist($name)) {
+      throw new Exception('Duplicated value by name: "' . $name . '"');
     }
   }
 
-  public function exist($aName)
-  {
-    return array_key_exists($aName, $this->items);
+  public function exist($name) {
+    return array_key_exists($name, $this->items);
   }
 
-  public function getByN($aName)
-  {
-    if (!$this->exist($aName))
-      throw new Exception('Item not exist by name: "'.$aName.'"');
-    return $this->items[$aName];
+  public function getByI($index) {
+    $name = '';
+    return $this->getNameValueByI($index, $name);
   }
 
-  public function getCheck($aName, &$value)
-  {
-    $result = $this->exist($aName);
-    if ($result)
-      $value = $this->items[$aName];
-    return $result;
+  public function getNameValueByI($index, &$name) {
+    $arrayKeys = array_keys($this->items);
+    $name = $arrayKeys[$index];
+    return $this->getByN($name);
   }
 
-  public function insert($aName, $value, $aNameBefore)
-  {
-    $this->duplicationCheck($aName);
-    $this->getByN($aNameBefore);
-
-    $lItems = array();
-
-    foreach($this->items as $lName => $value)
-    {
-      if ($lName == $aNameBefore)
-        $lItems[$aName] = $value;
-      $lItems[$lName] = $value;
+  public function getByN($name) {
+    if (!$this->exist($name)) {
+      throw new Exception('Item not exist by name: "' . $name . '"');
     }
-
-    $this->items = $lItems;
+    return $this->items[$name];
   }
 
-  public function loadFromString($value)
-  {
-    $lItems = unserialize($value);
-    foreach ($lItems as $lName => $value)
-      $this->add($lName, $value);
-  }
-
-  public function toArray()
-  {
-    $result = array();
-
-    foreach ($this->items as $lName => $value)
-      $result[$lName] = $value;
-
+  public function getCheck($name, &$value) {
+    $result = $this->exist($name);
+    if ($result) {
+      $value = $this->items[$name];
+    }
     return $result;
   }
 
-  public function saveToString()
-  {
+  public function insert($name, $value, $nameBefore) {
+    $this->duplicationCheck($name);
+    $this->items = insertBeforeArrayValue($this->items, $name, $value,
+      $nameBefore);
+  }
+
+  public function loadFromString($value) {
+    $items = unserialize($value);
+    foreach ($items as $name => $value) {
+      $this->add($name, $value);
+    }
+  }
+
+  public function saveToString() {
     return serialize($this->items);
   }
 
-  public function valuesToSectionString($aDelimiter)
-  {
-    return implode($aDelimiter, array_values($this->items));
+  public function valuesToSectionString($delimiter) {
+    return implode($delimiter, array_values($this->items));
   }
 }
 
-class cNamedIndexedList extends cNamedList
-{
-  private $itemsByI = array();
+class LinearList extends NamedList {
+  private $position = -1;
 
-  public function add($aName, $value)
-  {
-    parent::add($aName, $value);
-    $this->itemsByI[] = $value;
-    return $value;
+  public function clearPosition() {
+    $this->position = -1;
   }
 
-  public function count()
-  {
-    return count($this->itemsByI);
-  }
-
-  public function delete($aName)
-  {
-    $value = $this->getByN($aName);
-    $lIndex = array_search($value, $this->itemsByI);
-    unset($this->itemsByI[$lIndex]);
-    $this->itemsByI = array_values($this->itemsByI);
-    parent::delete($aName);
-  }
-
-  public function getByI($aIndex)
-  {
-    if (!array_key_exists($aIndex, $this->itemsByI))
-      throw new Exception('Item not exist by index: "'.$aIndex.'"');
-    return $this->itemsByI[$aIndex];
-  }
-
-  public function insert($aName, $value, $aNameBefore)
-  {
-    parent::insert($aName, $value, $aNameBefore);
-
-    $lItemsByI = array();
-
-    foreach($this->itemsByI as $lIndex => $value)
-    {
-      if ($value->name == $aNameBefore)
-        $lItemsByI[] = $value;
-      $lItemsByI[] = $value;
-    }
-
-    $this->itemsByI = $lItemsByI;
-  }
-}
-
-class cLinearNamedIndexedList extends cNamedIndexedList
-{
-  protected $position = -1;
-
-  public function isAllRead()
-  {
-    return $this->position == $this->count() - 1;
-  }
-
-  public function nextExist()
-  {
+  public function existNext() {
     return $this->position + 1 < $this->count();
   }
 
-  public function nextGet()
-  {
+  public function existNextByN($name) {
+    $result = $this->position + 1 < $this->count();
+
+    if ($result) {
+      $lName = '';
+      $this->getNameValue($this->position + 1, $lName);
+      $result = $name === $lName;
+    }
+
+    return $result;
+  }
+
+  public function finalize() {
+    if ($this->position !== $this->count() - 1) {
+      throw new Exception('Not all items processed' . $this->saveToString());
+    }
+  }
+
+  public function getCheckNext(&$value) {
+    if (!$this->existNext()) {
+      return false;
+    }
+    $value = $this->getNext();
+    return true;
+  }
+
+  public function getCheckNextByN($name, &$value) {
+    if (!$this->existNextByN($name)) {
+      return false;
+    }
+    $value = $this->getNextByN($name);
+    return true;
+  }
+
+  public function getCheckNextOByN($name, &$object) {
+    if (!$this->existNextByN($name)) {
+      return false;
+    }
+    $object = $this->getNextOByN($name);
+    return true;
+  }
+
+  public function getNext() {
     $result = $this->getByI($this->position + 1);
     $this->position++;
     return $result;
   }
 
-  public function nextGetCheck(&$value)
-  {
-    if (!$this->nextExist())
-      return false;
-
-    $value = $this->nextGet();
-    return true;
+  public function getNextByN($name) {
+    $lName = '';
+    $result = $this->getNameValueByI($this->position + 1, $lName);
+    if ($name !== $lName) {
+      throw new Exception('Invalid next param name: "' . $name .
+        '" must be: "' . $lName . '"');
+    }
+    $this->position++;
+    return $result;
   }
 
-  public function positionClear()
-  {
-    $this->position = -1;
+  public function getNextOByN($name) {
+    $value = $this->getNextByN($name);
+    return new NameValueObject($name, $value);
   }
 }
 
-class cNameValueObject
-{
+class NameValueObject {
   protected $value = '';
 
   public $name = '';
   public $index = -1;
 
-  public function __construct($aName, $value)
-  {
-    $this->name = $aName;
-    $this->valueSet($value);
+  public function __construct($name, $value) {
+    $this->name = $name;
+    $this->set($value);
   }
 
-  public function getB()
-  {
+  public function get() {
+    return $this->value;
+  }
+
+  public function getB() {
     return $this->getByType(V_BOOLEAN);
   }
 
-  public function getD()
-  {
+  public function getD() {
     return $this->getByType(V_DATE);
   }
 
-  public function getDT()
-  {
+  public function getDT() {
     return $this->getByType(V_DATETIME);
   }
 
-  public function getByType($varType)
-  {
+  public function getByType($varType) {
     return valueByType($this->value, $varType);
   }
 
-  public function getF()
-  {
+  public function getF() {
     return $this->getByType(V_FLOAT);
   }
 
-  public function getI()
-  {
+  public function getI() {
     return $this->getByType(V_INTEGER);
   }
 
-  public function getS()
-  {
+  public function getS() {
     return $this->getByType(V_STRING);
   }
 
-  public function getT()
-  {
+  public function getT() {
     return $this->getByType(V_TIME);
   }
 
-  public function valueSet($value)
-  {
+  public function set($value) {
     $this->value = $value;
   }
 }
 
-class cNameValueLinearNamedIndexedList extends cLinearNamedIndexedList
-{
-  public function add($aName, $value)
-  {
-    parent::add($aName, $value);
-    $value->index = $this->count() - 1;//!!test on delete
-    return $value;
+class HierarchyList {
+  private $currList = null;
+  private $level = 0;
+  private $levels = array();
+  private $notSupportedDuplication = true;
+
+  public function __construct(array $items = array(),
+    $notSupportedDuplication = true) {
+    $this->notSupportedDuplication = $notSupportedDuplication;
+    $this->addList($items);
   }
 
-  public function addNameValueObject(cNameValueObject $aObject)
-  {
-    $this->add($aObject->name, $aObject);
+  private function addList(array $items) {
+    $this->currList = new LinearList($items,
+      $this->notSupportedDuplication);
+    $this->levels[] = $this->currList;
+    return $this->currList;
   }
 
-  public function currDeleteByN($aName)
-  {
-    eAssert($this->position > -1);
-    $value = $this->getByI($this->position);
-    eAssert($value->name == $aName);
-    $this->delete($aName);
-    $this->position--;
+  public function getCurrList() {
+    return $this->currList;
   }
 
-  public function nextGetCheckByN($aName, &$value)
-  {
-    if (!$this->nextExist())
-      return false;
-
-    $value = $this->getByI($this->position + 1);
-
-    if ($value->name != $aName)
-      return false;
-
-    $value = $value;
-    $this->position++;
-    return true;
+  public function beginLevel($name) {
+    $items = $this->currList->getNextByN($name);
+    return $this->addList($items);
   }
 
-  public function nextGetByN($aName)
-  {
-    $result = $this->nextGet();
-    if ($result->name != $aName)
-      throw new Exception('Invalid next param name: "'.$aName.'" must be: "'.
-        $result->name.'"');
-    return $result;
-  }
-}
-
-class cXmlBase extends cNameValueObject
-{ //!ACTION
-  const ACTION_INSERT = '_i';
-  const ACTION_UPDATE = '_u';
-  const ACTION_DELETE = '_d';
-  const ACTION_BEFORE = '_b';
-  const ACTION_NAME   = '_n';
-
-  public $action = '_u';
-  public $id = '';
-  public $anchor = '';
-
-  public function __construct($aName, $value)
-  {
-    if (!$aName)//!!test it
-      return;
-
-    $lName = $aName;
-
-    if ((mb_strlen($lName) > 3) && ($lName[0] == '_') && ($lName[2] == '-'))
-    {
-      $lNames = explode('-', $lName);
-      $lNameCount = count($lNames);
-      eAssert($lNameCount > 1);
-      $this->action = $lNames[0];
-
-      switch ($this->action) {
-      case self::ACTION_INSERT:
-        eAssert($lNameCount == 2);
-        $lName = $lNames[1];
-        break;
-     case self::ACTION_UPDATE:
-        eAssert($lNameCount == 3);
-        $this->id = $lNames[1];
-        $lName = $lNames[2];
-        break;
-     case self::ACTION_DELETE:
-        if ($lNameCount == 2)
-          $lName = $lNames[1];
-        else
-        {
-          eAssert($lNameCount == 3);
-          $this->id = $lNames[1];
-          $lName = $lNames[2];
-        }
-        break;
-     case self::ACTION_BEFORE:
-        eAssert($lNameCount == 3);
-        $this->anchor = $lNames[1];
-        $lName = $lNames[2];
-        break;
-     case self::ACTION_NAME:
-        eAssert($lNameCount == 3, $lName);
-        $this->id = $lNames[1];
-        $lName = $lNames[2];
-        break;
-      default:
-        throw new Exception('Not supported action: "'.$this->action.'"');
-      }
-    }
-
-    if (!$this->id)
-      $this->id = $lName;
-
-    parent::__construct($lName, $value);
-  }
-}
-
-class cXmlAttr extends cXmlBase
-{
-  public function save($aSimpleXmlElement)
-  {
-    $aSimpleXmlElement->addAttribute($this->name, $this->value);
-  }
-}
-
-class cXmlNode extends cXmlBase
-{
-  public $attrs = null;
-  public $nodes = null;
-  public $nodesById = null;
-
-  public $isUnique = false;
-
-  public function __construct($aName, $value)
-  {
-    parent::__construct($aName, $value);
-    $this->attrs = new cNameValueLinearNamedIndexedList(cNamedList::DUPLICATION_TYPE_ERROR);
-    $this->nodes = new cNameValueLinearNamedIndexedList(cNamedList::DUPLICATION_TYPE_NONE);
-    $this->nodesById = new cNamedList(cNamedList::DUPLICATION_TYPE_NONE);
+  public function endLevel() {
+    eAssert(count($this->levels) > 1, 'Cannot close root level');
+    $this->currList->finalize();
+    array_pop($this->levels);
+    $this->currList = $this->levels[count($this->levels) - 1];
   }
 
-  public function allReadAsser()
-  {
-    if(!$this->attrs->isAllRead() || !$this->nodes->isAllRead())
-      throw new Exception('Not read xml node:'.CRLF.$this->saveToString());
-
-    for ($i = 0, $l = $this->nodes->count(); $i < $l; $i++)
-      $this->nodes->getByI($i)->allReadAsser();
-  }
-
-  private function attrAdd($aAttrName, $aAttrValue)
-  {
-    return $this->attrs->addNameValueObject(
-      new cXmlAttr($aAttrName, $aAttrValue));
-  }
-
-  private function attrAddCopy($aAttr)
-  {
-    return $this->attrAdd($aAttr->name, $aAttr->getS());
-  }
-
-  private function attrInsert($aAttrName, $aAttrValue, $aAttrNameBefore)
-  {
-    $lAttr = new cXmlAttr($aAttrName, $aAttrValue);
-    return $this->attrs->insert($lAttr->name, $lAttr, $aAttrNameBefore);
-  }
-
-  private function fullNameGet()
-  {
-    return (($this->id != $this->name) ? '_n-'.$this->id.'-' : '').$this->name;
-  }
-
-  protected function load($aSimpleXmlElement)
-  {
-    foreach($aSimpleXmlElement->attributes() as $lAttrName => $lAttrValue)
-      $this->attrAdd($lAttrName, (string)$lAttrValue);
-
-    foreach ($aSimpleXmlElement->children() as $lNode)
-      $this->nodeLoad($lNode);
-  }
-
-  private function nodeAdd($aNodeName, $aNodeValue)
-  {
-    $lNode = new cXmlNode($aNodeName, $aNodeValue);
-    $this->nodeValidate($lNode);
-    return $this->nodes->add($lNode->name, $lNode);
-  }
-
-  private function nodeAddCopy($aXmlNode)
-  {
-    $lNode = $this->nodeAdd($aXmlNode->fullNameGet(), $aXmlNode->getS());
-    $lNode->nodeColectionsAddCopy($aXmlNode);
-  }
-
-  private function nodeColectionsAddCopy($aXmlNode)
-  {
-    for ($i = 0, $l = $aXmlNode->attrs->count(); $i < $l; $i++)
-      $this->attrAddCopy($aXmlNode->attrs->getByI($i));
-
-    for ($i = 0, $l = $aXmlNode->nodes->count(); $i < $l; $i++)
-      $this->nodeAddCopy($aXmlNode->nodes->getByI($i));
-  }
-
-  private function nodeInsertCopy($aXmlNode, $aNodeNameBefore)
-  {
-    $lNode = new cXmlNode($aXmlNode->fullNameGet(), $aXmlNode->getS());
-    $this->nodeValidate($lNode);
-    $this->nodes->insert($lNode->name, $lNode, $aNodeNameBefore);
-    $lNode->nodeColectionsAddCopy($aXmlNode);
-  }
-
-  private function nodeLoad($aSimpleXmlElement)
-  {
-    $lNode = $this->nodeAdd($aSimpleXmlElement->getName(),
-      $this->nodeValueGet($aSimpleXmlElement));
-    $lNode->load($aSimpleXmlElement);
-  }
-
-  private function nodeSave($aSimpleXmlElement)
-  {
-    $lIsAddCData = (($this->value != '')
-      && !$this->nodeValueValidCheck($this->value));
-
-    $lSimpleXmlElement = $aSimpleXmlElement->addChild($this->name,
-      $lIsAddCData ? null : ($this->value ? $this->value : null));
-
-    if ($lIsAddCData)
-    {
-      $lDomNode = dom_import_simplexml($lSimpleXmlElement);
-      $lDomCData = $lDomNode->ownerDocument->createCDATASection($this->value);
-      $lDomNode->appendChild($lDomCData);
-    }
-
-    $this->save($lSimpleXmlElement);
-  }
-
-  private function nodeValidate($aXmlNode)
-  {
-    $aXmlNode->isUnique = !$this->nodesById->exist($aXmlNode->id);
-    $this->nodesById->add($aXmlNode->id, $aXmlNode);
-  }
-
-  protected function nodeValueGet($aSimpleXmlElement)
-  {
-    $lNodeValue = (string)$aSimpleXmlElement;
-    $lNodeValueTrim = mb_trim($lNodeValue);
-
-    return  $lNodeValueTrim == '' ? '' : $lNodeValue;
-  }
-
-  private function nodeValueValidCheck($value)
-  {
-    for ($i = 0, $l = mb_strlen($value); $i < $l; $i++)
-    {
-      $lChar = $value[$i];
-      switch ($lChar) {
-      case '<':
-      case '>':
-      case '&':
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private function save($aSimpleXmlElement)
-  {
-    for ($i = 0, $l = $this->attrs->count(); $i < $l; $i++)
-      $this->attrs->getByI($i)->save($aSimpleXmlElement);
-
-    for ($i = 0, $l = $this->nodes->count(); $i < $l; $i++)
-      $this->nodes->getByI($i)->nodeSave($aSimpleXmlElement);
-  }
-
-  public function saveToFile($filePath)
-  {
-    $lDom = dom_import_simplexml($this->saveToSimpleXMLElement())->ownerDocument;
-    $lDom->formatOutput = true;
-    $lDom->save($filePath);
-  }
-
-  private function saveToSimpleXMLElement()
-  {
-    $result = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?>'.
-      '<'.$this->name.'>'.$this->value.'</'.$this->name.'>');
-
-    $this->save($result);
-
-    return $result;
-  }
-
-  public function saveToString()
-  {
-    return $this->saveToSimpleXMLElement()->asXML();
-  }
-
-  public function update($aXmlNode)
-  {
-    eAssert($this->name = $aXmlNode->name);
-
-    if (!$this->isUnique)
-      throw new Exception('Can not update not unique node: "'.$this->name.
-        '" Xml1: "'.$this->saveToString().'" Xml2: "'.$aXmlNode->saveToString().
-        '"');
-
-    $value = $aXmlNode->getS();
-    if ($value != '')
-    {
-      if ($this->getS() == $value)
-        throw new Exception('Duplicated value for node: "'.$this->name.
-          '" value: "'.$value.'"');
-
-      $this->valueSet($value);
-    }
-
-    for ($i = 0, $l = $aXmlNode->attrs->count(); $i < $l; $i++)
-    {
-      $lAttrFrom = $aXmlNode->attrs->getByI($i);
-
-      switch ($lAttrFrom->action) {
-      case self::ACTION_INSERT:
-        $this->attrAddCopy($lAttrFrom);
-        break;
-      case self::ACTION_UPDATE:
-        if ($this->attrs->getCheck($lAttrFrom->name, $lAttrTo))
-        {
-          $lAttrFromValue = $lAttrFrom->getS();
-
-          if ($lAttrTo->getS() == $lAttrFromValue)
-            throw new Exception('Duplicated value for node: "'.$lAttrTo->name.
-              '" value: "'.$lAttrFromValue.'"');
-
-          $lAttrTo->valueSet($lAttrFromValue);
-        }
-        else
-          $this->attrAddCopy($lAttrFrom);
-        break;
-      case self::ACTION_DELETE:
-        $this->attrs->delete($lAttrFrom->name);
-        break;
-      case self::ACTION_BEFORE:
-        $this->attrInsert($lAttrFrom->name, $lAttrFrom->getS(),
-          $lAttrFrom->anchor);
-        break;
-      default:
-        throw new Exception('Not supported action: "'.$lAttrFrom->action.'"');
-      }
-    }
-
-    $lLastUpdateIndex = -1;
-    $lIsUpdateAllowed = true;
-
-    for ($i = 0, $l = $aXmlNode->nodes->count(); $i < $l; $i++)
-    {
-      $lNodeFrom = $aXmlNode->nodes->getByI($i);
-
-      switch ($lNodeFrom->action) {
-      case self::ACTION_INSERT:
-        $this->nodeAddCopy($lNodeFrom);
-        $lIsUpdateAllowed = false;
-        break;
-      case self::ACTION_UPDATE:
-      case self::ACTION_NAME:
-        if ($this->nodesById->getCheck($lNodeFrom->id, $lNodeTo))
-        {
-          if (!$lIsUpdateAllowed)
-            throw new Exception('Update allowed only before insert: "'.
-              $lNodeFrom->name.'"');
-          if ($lNodeTo->index <= $lLastUpdateIndex)
-            throw new Exception('Bad node order for update: "'.$lNodeFrom->name.
-              '"');
-
-          $lNodeTo->update($lNodeFrom);
-          $lLastUpdateIndex = $lNodeTo->index;
-        }
-        else
-        {
-          $this->nodeAddCopy($lNodeFrom);
-          $lIsUpdateAllowed = false;
-        }
-        break;
-      case self::ACTION_DELETE:
-        $this->nodes->delete($lNodeFrom->name);
-        $this->nodesById->delete($lNodeFrom->id);
-        break;
-      case self::ACTION_BEFORE:
-        $this->nodeInsertCopy($lNodeFrom, $lNodeFrom->anchor);
-        $lIsUpdateAllowed = false;
-        break;
-      default:
-        throw new Exception('Not supported action: "'.$lNodeFrom->action.'"');
-      }
-    }
-  }
-}
-
-class cXmlDocument extends cXmlNode
-{
-  public function __construct()
-  {
-    parent::__construct('', '');
-  }
-
-  private function loadDocument($aXmlDocument)
-  {
-    $this->name = $aXmlDocument->getName();
-    $this->valueSet($this->nodeValueGet($aXmlDocument));
-    $this->isUnique = true;
-
-    $this->load($aXmlDocument);
-  }
-
-  public function loadFromFile($filePath)
-  {
-    $lDoc = simplexml_load_file($filePath);
-    eAssert($lDoc, 'Can not load xmlFlp: "'.$filePath.'"');
-    $this->loadDocument($lDoc);
-  }
-
-  public function loadFromString($aXmlString)
-  {
-    $lDoc = simplexml_load_string($aXmlString);
-    eAssert($lDoc, 'Can not load xmlString: "'.$aXmlString.'"');
-    $this->loadDocument($lDoc);
-  }
-
-  public function rootNodeNameCheckAssert($aNodeName)
-  {
-    eAssert($this->name == $aNodeName,
-      'Wrong root node name: "'.$this->name.'" must be: "'.$aNodeName.
-        '"');
+  public function finalize() {
+    eAssert(count($this->levels) === 1, 'Exist not ended levels');
+    $this->currList->finalize();
   }
 }
 ?>

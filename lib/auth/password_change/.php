@@ -27,11 +27,11 @@ abstract class cBlocks_Auth_PasswordChange extends cBlock
   private function paramsProcess(&$aErrorType)
   {
     $lReadedParamCount = 0;
-    if (paramPostGetGetCheck('password_old', VAR_TYPE_STRING, $lPasswordOld))
+    if (paramPostGetGetCheck('password_old', V_STRING, $lPasswordOld))
       $lReadedParamCount++;
-    if (paramPostGetGetCheck('password_new', VAR_TYPE_STRING, $lPasswordNew))
+    if (paramPostGetGetCheck('password_new', V_STRING, $lPasswordNew))
       $lReadedParamCount++;
-    if (paramPostGetGetCheck('password_new_confirm', VAR_TYPE_STRING,
+    if (paramPostGetGetCheck('password_new_confirm', V_STRING,
       $lPasswordNewConfirm))
       $lReadedParamCount++;
 

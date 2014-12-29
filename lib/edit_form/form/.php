@@ -17,17 +17,17 @@ class cFormOption extends cOptionBase
 
     $this->loadFromXml($aXmlNode);
 
-    $this->type = $aXmlNode->attrs->nextGetByN('Type')->getS();
+    $this->type = $aXmlNode->attrs->getNextByN('Type')->getS();
 
-    if ($aXmlNode->attrs->nextGetCheckByN('InputType', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('InputType', $lAttr))
       $this->inputType = $lAttr->getS();
     else
       $this->inputType = inputTypeByVarType($this->type);
 
-    if ($aXmlNode->attrs->nextGetCheckByN('IsRequired', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('IsRequired', $lAttr))
       $this->isRequired = $lAttr->getB();
 
-    if ($aXmlNode->attrs->nextGetCheckByN('DefaultValue', $lAttr))
+    if ($aXmlNode->attrs->getCheckNextByN('DefaultValue', $lAttr))
       $this->valueSetDirect($lAttr->getByType($this->type));
   }
 
@@ -80,7 +80,7 @@ class cForm extends cOptionsBase
 
   public function loadFromXml($aXmlNode)
   {
-    while ($aXmlNode->nodes->nextGetCheck($lOptionNode))
+    while ($aXmlNode->nodes->getCheckNext($lOptionNode))
       $this->optionCreate($lOptionNode);
 
     $this->isInitialized = true;
@@ -130,7 +130,7 @@ class cBlocks_EditForm_Form extends cBlock
   {
     parent::settingsRead($aXmlNode);
 
-    $this->form->loadFromXml($aXmlNode->nodes->nextGetByN('Form'));
+    $this->form->loadFromXml($aXmlNode->nodes->getNextByN('Form'));
   }
 }
 ?>

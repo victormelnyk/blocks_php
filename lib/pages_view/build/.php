@@ -14,8 +14,8 @@ class cBlocks_PagesView_Build extends cBlock
   {
     parent::settingsRead($aXmlNode);
 
-    $lPagesNode = $aXmlNode->nodes->nextGetByN('Pages');
-    while ($lPagesNode->nodes->nextGetCheck($lPageNode))
+    $lPagesNode = $aXmlNode->nodes->getNextByN('Pages');
+    while ($lPagesNode->nodes->getCheckNext($lPageNode))
     {
       $lNames = $this->nameFullExplode($lPageNode->name, 2);
 
@@ -24,27 +24,27 @@ class cBlocks_PagesView_Build extends cBlock
 
       $lAttr = null;
 
-      if ($lPageNode->attrs->nextGetCheckByN('Name', $lAttr))
+      if ($lPageNode->attrs->getCheckNextByN('Name', $lAttr))
         $lName = $lAttr->getS();
       else
         $lName = '';
 
-      if ($lPageNode->attrs->nextGetCheckByN('Description', $lAttr))
+      if ($lPageNode->attrs->getCheckNextByN('Description', $lAttr))
         $lDescription = $lAttr->getS();
       else
         $lDescription = '';
 
-      if ($lPageNode->attrs->nextGetCheckByN('Params', $lAttr))
+      if ($lPageNode->attrs->getCheckNextByN('Params', $lAttr))
         $lParams = $lAttr->getS();
       else
         $lParams = '';
 
-      if ($lPageNode->attrs->nextGetCheckByN('Width', $lAttr))
+      if ($lPageNode->attrs->getCheckNextByN('Width', $lAttr))
         $lWidth = $lAttr->getS();
       else
         $lWidth = '100%';
 
-     if ($lPageNode->attrs->nextGetCheckByN('Height', $lAttr))
+     if ($lPageNode->attrs->getCheckNextByN('Height', $lAttr))
         $lHeight = $lAttr->getS();
       else
         $lHeight = '200px';
