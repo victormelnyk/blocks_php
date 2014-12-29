@@ -1,4 +1,4 @@
-<?php
+<?
 //!PT = PerformanceCounter
 class cPCHelper
 {

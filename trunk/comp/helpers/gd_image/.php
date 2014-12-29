@@ -1,4 +1,4 @@
-<?php
+<?
 class cGdImageHelper
 {
   public static function resize($aSrcFlp, $ADestFlp, $aDestWidth, $aDestHeight)

@@ -1,4 +1,4 @@
-<?php
+<?
 class cRecordsetGridAdaptationHelper
 {
   public static function process(&$aRecordset, $aColCount)

@@ -1,6 +1,6 @@
-<?php
-cPage::moduleAdd('blocks/lib/db_view/controler/.php');
-cPage::moduleAdd('blocks/comp/helpers/recordset_grid_adaptation/.php');
+<?
+Page::addModule('blocks/lib/db_view/controler/.php');
+Page::addModule('blocks/comp/helpers/recordset_grid_adaptation/.php');
 
 class cColCountOption extends cOptionBase
 {
@@ -59,7 +59,7 @@ class cColCount extends cOptionsBase
   }
 }
 
-class cBlocks_DbView_ControlerGrid extends cBlocks_DbView_Controler
+class Blocks_DbView_ControlerGrid extends Blocks_DbView_Controler
 {
   public $colCount = null;
 
@@ -84,9 +84,9 @@ class cBlocks_DbView_ControlerGrid extends cBlocks_DbView_Controler
       $this->colCount->currentOptionValue);
   }
 
-  protected function settingsRead(cXmlNode $aXmlNode)
+  protected function readSettings(cXmlNode $aXmlNode)
   {
-    parent::settingsRead($aXmlNode);
+    parent::readSettings($aXmlNode);
 
     if ($aXmlNode->nodes->getCheckNextByN('ColCount', $lNode))
       $this->colCount->loadFromXml($lNode);

@@ -1,9 +1,9 @@
-<?php
-abstract class cBlocks_Auth_Login extends cBlock
+<?
+abstract class Blocks_Auth_Login extends Block
 {
   public function build()
   {
-    return $this->templateProcess($this->fileFirstExistDataGet('.htm'),
+    return $this->templateProcess($this->getFirstExistFileData('.htm'),
        $this->settings->context->toArray());
   }
 
@@ -20,8 +20,8 @@ abstract class cBlocks_Auth_Login extends cBlock
 
   protected function onError()
   {
-    $this->initScriptAdd('page.logger.error("'.
-      $this->localizationTagValueGet('Error').'");');
+    $this->addInitScript('page.logger.error("'.
+      $this->getMlTagValue('Error').'");');
   }
 
   protected function onSuccess()

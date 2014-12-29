@@ -1,5 +1,5 @@
-<?php
-cPage::moduleAdd('blocks/lib/edit_form/form/.php');
+<?
+Page::addModule('blocks/lib/edit_form/form/.php');
 
 //!EDIT_MODE
 define('EDIT_MODE_UNDEFINED', 'undefined');
@@ -235,12 +235,12 @@ class cDbForm extends cForm
   }
 }
 
-class cBlocks_EditForm_DbForm extends cBlocks_EditForm_Form
+class Blocks_EditForm_DbForm extends Blocks_EditForm_Form
 {
   public function build()
   {
     $lForm = $this->form;
-    return $this->templateProcess($this->fileFirstExistDataGet('.htm'), array(
+    return $this->templateProcess($this->getFirstExistFileData('.htm'), array(
       'editMode'    => $lForm->editMode,
       'callbackUrl' => $lForm->callbackUrl,
       'options'     => $lForm->asArrayGet()

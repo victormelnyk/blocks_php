@@ -1,5 +1,5 @@
-<?php
-class cPageNavigatorHelper
+<?
+class PageNavigatorHelper
 {
   //!NAVIGATOR_ITEM_TYPE
   const NIT_FIRST = 1;

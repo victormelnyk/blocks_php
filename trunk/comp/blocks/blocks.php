@@ -1,23 +1,21 @@
-<?php
-//!uses
-//SimpleXML
-
+<?
 //!
 //SetNameFull = AppName.SetName
 //PageNameFull = AppName.SetName.PageName
 //ComponentNameFull = AppName.LibraryName.ComponentName
 //SetBlockNameFull = AppName.SetName.BlockName
 //BlockNameFull = AppName.SetName.PageName.BlockName
+/*!*/
+$settings = array(
+  'rootDir'    => '../../../',//!*
+  'rootRunDir' => '../../../',
 
-//!
-//PageParams = array(
-//'cacheDir' -> 'cache/',
-//'rootDir'  -> '../',
-//'db'       -> null
-//)
+  'isCache'   => false,
+  'isProfile' => false,
+  'isTest'    => true
+);
 
-class cPageSettings
-{
+class PageSettings {
   public $rootDir = '';
   public $rootRunDir = '';
 
@@ -31,27 +29,59 @@ class cPageSettings
   public $onErrorFunction = '';
   public $onTemplateErrorFunction = '';
 
-  public $defaultLanguage = '';
+  public $defaultLanguage = 'en';
+  public $appNames = array();
 
-  public function __construct()
-  {
+/*!! from set
+  public $appNames = array();
+  public $setNames = array();//!! cashe
+  public $runDirs = array();
+*/
+
+  public function __construct($settings) {
     session_start();
+
+    $settings = new LinearList($settings);
+
+    $this->rootDir = $settings->getNextByN('rootDir');
+
+    $settings->getCheckNextByN('rootRunDir', $this->rootRunDir);
+
+    $value = null;
+    if ($settings->getCheckNextOByN('isCache', $value)) {
+      $this->isCache = $value->getB();
+    }
+
+    if ($settings->getCheckNextOByN('isProfile', $value)) {
+      $this->isProfile = $value->getB();
+    }
+    if ($settings->getCheckNextOByN('isTest', $value)) {
+      $this->isTest = $value->getB();
+    }
+
+    $settings->finalize();
   }
 
-  public function init()
-  {
-    if ($this->isTest)
-    {
-      if (!paramPostGetSessionGetCheck('is_cache', V_BOOLEAN,
-        $this->isCache))
-        $this->isCache = false;
+  public function init($params, $session) {
+    if ($this->isTest) {
+      $value = null;
+      if ($params->getCheck('is_cache', $value)) {
+        $this->isCache = $value->getB();
+        $_SESSION['is_cache'] = $this->isCache;
+      } else if ($session->getCheck('is_cache', $value)) {
+        $this->isCache = $value->getB();
+      }
 
-      paramPostGetSessionGetCheck('is_profile', V_BOOLEAN,
-        $this->isProfile);
+      $value = null;
+      if ($params->getCheck('is_profile', $value)) {
+        $this->isProfile = $value->getB();
+        $_SESSION['is_profile'] = $this->isCache;
+      } else if ($session->getCheck('is_profile', $value)) {
+        $this->isProfile = $value->getB();
+      }
 
-      if ($this->isProfile)
-      {
-        require_once($this->rootDir.'blocks/comp/helpers/profiler/.php');
+      if ($this->isProfile) {
+        require_once($this->rootDir.'blocks/comp/helpers/profiler/.php');//!!test
         cPFHelper::init($this->rootDir);
       }
     }
@@ -66,166 +96,74 @@ class cPageSettings
         '" do not exsist');
   }
 
-  public function log($aMessage)
+  public function log($aMessage)//!!delete
   {
-    $lFlp = $this->rootDir.'tmp/logs/'.gmdate('YmdHis').'.log';//!! add app name
+    $filePath = $this->rootDir.'tmp/logs/'.gmdate('YmdHis').'.log';//!! add app name
     $lData = gmdate('YmdHis').' : '.$aMessage.CRLF;
-    stringToFileExt($lData, $lFlp, True, 'a');
+    stringToFileExt($lData, $filePath, True, 'a');
   }
 }
 
-class cCache
-{
-  public $cacheDir = '';
+class Cache {
+  private $cacheDir = '';
 
-  public $data     = array();
+  public $data     = array();//!!linear list
   public $isActive = false;
   public $isValid  = false;
 
-  public function __construct($aCacheDir, $aIsActive)
-  {
-    $this->cacheDir = $aCacheDir;
-    $this->isActive = $aIsActive;
+  public function __construct($cacheDir, $isActive) {
+    $this->cacheDir = $cacheDir;
+    $this->isActive = $isActive;
 
-    if ($this->isActive)
-      $this->load();
-  }
-
-  public function save()
-  {
-    stringToFile(serialize($this->data), $this->cacheDir.'.blc');
-  }
-
-  public function saveToFile($aValue, $aRelativeFlp)
-  {
-    stringToFile($aValue, $this->cacheDir.$aRelativeFlp);
-    return $this->cacheDir.$aRelativeFlp;
-  }
-
-  private function load()
-  {
-    if (file_exists($this->cacheDir.'.blc'))
-    {
+    if ($this->isActive && file_exists($this->cacheDir . '.blc')) {
+      $this->data = unserialize(fileToString($this->cacheDir . '.blc'));
       $this->isValid = true;
-      $this->data = unserialize($this->loadFromFile('.blc'));
     }
   }
 
-  public function loadFromFile($aRelativeFlp)
-  {
-    return fileToString($this->cacheDir.$aRelativeFlp);
+  public function save() {
+    stringToFile(serialize($this->data), $this->cacheDir . '.blc');
+  }
+
+  public function saveToFile($value, $relativeFilePath) {
+    stringToFile($value, $this->cacheDir . $relativeFilePath);
+    return $this->cacheDir . $relativeFilePath;
   }
 }
 
-class cParams
-{
-  public $blocks = null;
-  public $sys = null;
-
-  public function __construct()
-  {
-    $this->sys = new NameValueLinearNamedIndexedList(
-      );
-    $this->blocks = new NamedIndexedList();
-
-    $this->load();
-  }
-
-  private function load()
-  {
-    $lParams = $_SERVER['REQUEST_METHOD'] == 'POST' ? $_POST : $_GET;
-
-    $lBlockParams = null;
-    $lBlockParamsList = array();
-
-    foreach ($lParams as $lName => $lValue)
-    {
-      if ($lName == 'b')
-      {
-        $lBlockNames = explode(',', $lValue);
-        $lBlockParamsList = array();
-
-        for ($i = 0, $l = count($lBlockNames); $i < $l; $i++)
-        {
-          $lBlockName = $lBlockNames[$i];
-
-          if (!$this->blocks->getCheck($lBlockName, $lBlockParams))
-            $lBlockParams = $this->blocks->add($lBlockName,
-              new NameValueLinearNamedIndexedList(
-                ));
-
-          $lBlockParamsList[$i] = $lBlockParams;
-        }
-        eAssert(count($lBlockParamsList));
-      }
-      else
-      {
-        $lParam = new NameValueObject($lName, $lValue);
-        if (count($lBlockParamsList))
-          for ($i = 0, $l = count($lBlockParamsList); $i < $l; $i++)
-            $lBlockParamsList[$i]->addNameValueObject($lParam);
-        else
-          $this->sys->addNameValueObject($lParam);
-      }
-    }
-  }
-}
-
-class cWebFile
-{
-  public $isNotCollect = true;
-  public $relativeFlp  = '';
-
-  public function __construct($aRelativeFlp, $aIsNotCollect)
-  {
-    $this->relativeFlp  = $aRelativeFlp;
-    $this->isNotCollect = $aIsNotCollect;
-  }
-}
-
-abstract class cContext
-{
+abstract class Context {
   protected $page = null;
 
-  public function pageSet(cPage $aPage)
-  {
-    $this->page = $aPage;
+  public function init(Page $page) {
+    $this->page = $page;
   }
 
-  public function settingsReadPage(cXmlNode $aXmlNode)
-  {
-  }
+  public function settingsReadPage(cXmlNode $aXmlNode) {}
 
-  public function settingsReadSet(cXmlNode $aXmlNode)
-  {
-  }
+  public function settingsReadSet(cXmlNode $aXmlNode) {}
 
-  public function validate()
-  {
+  public function validate() {
     return false;
   }
 }
 
-abstract class cMetaData
-{ //!FileLevels
-  const LEVEL_SET      = 's';
-  const LEVEL_PAGE     = 'p';
-  const LEVEL_BLOCK    = 'b';
-  const LEVEL_EXTERNAL = 'e';
-  const LEVEL_WEB      = 'w';
+abstract class MetaData { //!FileLevels
+  const FL_PAGE     = 'p';
+  const FL_BLOCK    = 'b';
+  const FL_EXTERNAL = 'e';
+  const FL_WEB      = 'w';//!!check
 
-  private $configXmls   = array();
+  private $configs   = array();
   private $fileDatas    = array();
-  private $fileFlps     = array();//!! -> fileNames, FilePath
-  private $fileFlpsList = array();
+  private $filePaths     = array();
+  private $filePathsList = array();
 
-  protected $settingsXmlNode = null;
+  protected $settingsXmlNode = null;//!!rename
 
   protected $scripts = null;
   protected $styles  = null;
 
-  public $defaultLanguage = '';//!!move to app level
-  public $filesByMl = array(); //!! ->LocalizationFiles
+  public $filesMl = array();
   public $tagsMl = null;
   public $tags = null;
 
@@ -233,6 +171,7 @@ abstract class cMetaData
   public $workDirs   = array();
 
   public $appName = '';
+  public $setName = '';
   public $name    = '';
 
   public $cache    = null;
@@ -240,1446 +179,1115 @@ abstract class cMetaData
 
   public $page = null;
 
-  public function __construct($aAppName, $aName, cPage $aPage, cCache $aCache,
-    cPageSettings $aSettings)
-  {
-    $this->scripts = new NamedIndexedList();
-    $this->styles  = new NamedIndexedList();
+  public function __construct($appName, $setName, $name, Page $page, Cache $cache,
+    PageSettings $settings) {
+    $this->scripts       = new NamedList();
+    $this->scriptsDirect = new NamedList();
+    $this->styles        = new NamedList();
+    $this->stylesDirect  = new NamedList();
 
-    $this->tagsMl = new NamedIndexedList();
-    $this->tags   = new NamedIndexedList();
+    $this->tagsMl = new NamedList();
+    $this->tags   = new NamedList();
 
-    $this->appName  = $aAppName;
-    $this->name     = $aName;
-    $this->page     = $aPage;
-    $this->cache    = $aCache;
-    $this->settings = $aSettings;
+    $this->appName  = $appName;//!!to page level
+    $this->setName  = $setName;
+    $this->name     = $name;
+    $this->page     = $page;
+    $this->cache    = $cache;
+    $this->settings = $settings;
   }
 
-  public function appDirGet($aAppName = '')
-  {
-    return $this->settings->rootDir.($aAppName ? $aAppName : $this->appName).'/';
+  public function getAppDir($appName = '') {
+    return $this->settings->rootDir . ($appName ? $appName : $this->appName) .
+      '/';
   }
 
-  protected function configCheck($aWorkDir, $aRootNodeName)
-  {
-    $lFlp = $aWorkDir.'.xml';
-    $this->workDirs[] = $aWorkDir;
+  protected function checkConfig($workDir) {
+    $filePath = $workDir . '.json';
+    $this->workDirs[] = $workDir;
 
-    if (!file_exists($lFlp))
+    if (!file_exists($filePath)) {
       return null;
+    }
 
-    $lXmlDocument = new cXmlDocument();
-    $lXmlDocument->loadFromFile($lFlp);
-    $lXmlDocument->rootNodeNameCheckAssert($aRootNodeName);
-    array_unshift($this->configXmls, $lXmlDocument);
-    return $lXmlDocument;
+    $config = new HierarchyList();
+    $config->getCurrList()->loadFromJsonFile($filePath);
+    array_unshift($this->configs, $config);
+    return $config;
   }
 
-  protected function configRead()
-  {
-    if (!count($this->configXmls))
+  public function getScriptsRecursive(NamedList $scripts,
+    NamedList $scriptsDirect) {
+    $this->addFileDataToListIfExist($scripts, 'web/.js');
+    $this->getResources($this->scripts, $scripts, false);
+    $this->getResources($this->scriptsDirect, $scriptsDirect, true);
+
+    for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
+      $this->blocks[$i]->getScriptsRecursive($scripts, $scriptsDirect);
+  }
+
+  public function getStylesRecursive(NamedList $styles,
+    NamedList $stylesDirect) {
+    $this->addFileDataToListIfExist($styles, 'web/.css');
+    $this->getResources($this->styles, $styles, false);
+    $this->getResources($this->stylesDirect, $stylesDirect, true);
+
+    for ($i = 0, $l = count($this->blocks); $i < $l; $i++) {
+      $this->blocks[$i]->getStylesRecursive($styles, $stylesDirect);
+    }
+  }
+
+  protected function readConfig() {
+    if (!count($this->configs)) {
       return;
+    }
 
-    $lXmlDocument = $this->configXmls[0];
+    $config = $this->configs[0];
 
-    for ($i = 1, $l = count($this->configXmls); $i < $l; $i++)
-      $lXmlDocument->update($this->configXmls[$i]);
+    for ($i = 1; $i < count($this->configs); $i++) {
+      $config->getCurrList()->marge($this->configs[$i]->getCurrList()->getItems());
+    }
 
-    $lXmlDocument->nodes->clearPosition();
+    $configList = $config->getCurrList();
+    $configList->clearPosition();
 
-    if ($lXmlDocument->nodes->getCheckNextByN('Inherited', $lInheritedNode))
-      $lXmlDocument->nodes->deleteCurrByN('Inherited');
+    if ($configList->getCheckNextByN('inherited', $inherited)) {
+      $configList->deleteCurrByN('inherited');
+    }
 
-    if ($lXmlDocument->nodes->getCheckNextByN('Localization',
-      $lLocalizationNode))
-    {
-      if ($lLocalizationNode->attrs->getCheckNextByN('DefaultLanguage',
-        $lDefaultLanguageAttr))
-        $this->defaultLanguage = $lDefaultLanguageAttr->getS();
+    if ($config->tryBeginLevelByN('ml', $ml)) {
+      if ($ml->getCheckNextByN('files', $filesMl)) {
+        assert(is_array($filesMl));
 
-      if ($lLocalizationNode->nodes->getCheckNextByN('FilesByMl',
-        $lFilesByMlNode))
-        while ($lFilesByMlNode->nodes->getCheckNextByN('F', $lFileByMlNode))
-          $this->filesByMl[$lFileByMlNode->getS()] = true;
+        for ($i = 1; $i < count($this->configs); $i++) {
+          $this->filesMl[$filesMl] = true;
+        }
+      }
 
-      if ($lLocalizationNode->nodes->getCheckNextByN('Tags', $lTags))
-        while ($lTags->nodes->getCheckNext($lTag))
-        {
-          while ($lTag->nodes->getCheckNext($lValueMl))
-          {
-            if (!$this->tagsMl->getCheck($lValueMl->name, $lValuesMl))
-            {
-              $lValuesMl = new NamedIndexedList(//!! do not create
-                );
-              $this->tagsMl->add($lValueMl->name, $lValuesMl);
+      if ($config->tryBeginLevelByN('tags')) {
+        while ($config->tryBeginLevelNV($tagName, $tag)) {
+          while ($tag->getCheckNextNV($language, $value)) {
+            $values = null;
+            if (!$this->tagsMl->getCheck($tagName, $values)) {
+              $values = new NamedList();
+              $this->tagsMl->add($tagName, $values);
             }
-            $lValuesMl->add($lTag->name, $lValueMl->getS());
+
+            $values->add($language, $value);
           }
+
+          $config->endLevel($tagName);
         }
 
-      $lXmlDocument->nodes->deleteCurrByN('Localization');
-    }
-
-    if ($lXmlDocument->nodes->getCheckNextByN('Tags', $lTags))
-    {
-      while ($lTags->nodes->getCheckNext($lTag))
-        $this->tags->add($lTag->name, $lTag->getS());
-      $lXmlDocument->nodes->deleteCurrByN('Tags');
-    }
-
-    if ($lXmlDocument->nodes->count() || $lXmlDocument->attrs->count())
-    {
-      $lXmlString = $lXmlDocument->saveToString();
-      $lXmlString = $this->stringTagsProcess($lXmlString, array());
-      $lXmlDocument = new cXmlDocument();
-      $lXmlDocument->loadFromString($lXmlString);
-
-      $this->configReadInternal($lXmlDocument);
-    }
-
-    $lXmlDocument->allReadAsser();
-  }
-
-  protected function configReadInternal(cXmlDocument $aXmlDocument)
-  {
-    if ($aXmlDocument->nodes->getCheckNextByN('Styles', $lStylesNode))
-      while ($lStylesNode->nodes->getCheckNextByN('Style', $lStyleNode))
-      {
-        $lRelativeFlp = $lStyleNode->getS();
-        if ($lStyleNode->attrs->getCheckNextByN('IsNotCollect',
-          $lAttrIsNotCollect))
-          $lIsNotCollect = $lAttrIsNotCollect->getB();
-        else
-          $lIsNotCollect = false;
-        $this->styles->add($lRelativeFlp, new cWebFile($lRelativeFlp,
-          $lIsNotCollect));
+        $config->endLevel('tags');
       }
 
-    if ($aXmlDocument->nodes->getCheckNextByN('Scripts', $lScriptsNode))
-      while ($lScriptsNode->nodes->getCheckNextByN('Script', $lScriptNode))
-      {
-        $lRelativeFlp = $lScriptNode->getS();
-        if ($lScriptNode->attrs->getCheckNextByN('IsNotCollect',
-          $lAttrIsNotCollect))
-          $lIsNotCollect = $lAttrIsNotCollect->getB();
-        else
-          $lIsNotCollect = false;
-        $this->scripts->add($lRelativeFlp, new cWebFile($lRelativeFlp,
-          $lIsNotCollect));
+      $config->endLevel('ml');
+      $configList->deleteCurrByN('ml');
+    }
+
+    if ($config->tryBeginLevelByN('tags', $tags)) {
+      while ($tags->getCheckNextNV($tagName, $tagValue)) {
+        $this->tags->add($tagName, $tagValue);
       }
 
-    if ($aXmlDocument->nodes->getCheckNextByN('InitScripts', $lInitScriptsNode))
-      while ($lInitScriptsNode->nodes->getCheckNextByN('InitScript',
-        $lInitScriptNode))
-        $this->initScript .= mb_trim($lInitScriptNode->getS());
+      $config->endLevel('tags');
+      $configList->deleteCurrByN('tags');
+    }
 
-    if ($aXmlDocument->nodes->getCheckNextByN('Settings', $lSettingsNode))
-    {
-      if (!$lSettingsNode->nodes->count() && !$lSettingsNode->attrs->count())
-        return;
+    if ($configList->count()) {
+      $configString = $configList->saveToString();
+      $configString = $this->processStringTags($configString, array());
+      $config = new HierarchyList();
+      $config->getCurrList()->loadFromString($configString);
 
-      $this->settingsXmlNode = $lSettingsNode;
-      $aXmlDocument->nodes->deleteCurrByN('Settings');
+      $this->readConfigInternal($config);
+    }
+
+    $config->finalize();
+  }
+
+  private function readResourcesConfigArray(NamedList $configList, $name,
+    NamedList $list) {
+    if ($configList->getCheckNextByN($name, $resultArray)) {
+      assert(is_array($resultArray));
+      for ($i = 1; $i < count($resultArray); $i++) {
+        $list->add($resultArray[$i], true);
+      }
     }
   }
 
-  private function fileDataGet($aFlp, $aIsAddToCache = true,
-    array $aTagsValues = array())
-  {
-    if ($this->cache->isValid)
-      return $this->fileDatas[$aFlp];
+  protected function readConfigInternal(HierarchyList $config) {
+    $configList = $config->getCurrList();
+    $this->readResourcesConfigArray($configList, 'styles', $this->styles);
+    $this->readResourcesConfigArray($configList, 'stylesDirect',
+      $this->stylesDirect);
+    $this->readResourcesConfigArray($configList, 'scripts', $this->scripts);
+    $this->readResourcesConfigArray($configList, 'scriptsDirect',
+      $this->scriptsDirect);
 
-    $lResult = fileToString($aFlp);
-    $lResult = $this->stringTagsProcess($lResult, $aTagsValues);
+    $configList->getCheckNextByN('initScripts', $this->initScript);
 
-    if ($aIsAddToCache)
-      $this->fileDatas[$aFlp] = $lResult;
-
-    return $lResult;
-  }
-
-  private function fileDataAddToListIfExist(NamedIndexedList $aList,
-    $aRelativeFlp)
-  {
-    if ($this->fileFirstExistFlpGetCheck($aRelativeFlp, $lFlp))
-      $aList->add($lFlp, $this->fileDataGet($lFlp, false));
-  }
-
-  public function fileExistFlpsGet($aRelativeFlp)
-  {
-    if ($this->cache->isValid)
-      return $this->fileFlpsList[$aRelativeFlp];
-    else
-    {
-      $lResult = array();
-
-      for ($i = 0, $l = count($this->workDirs); $i < $l; $i++)
-      {
-        $lFlp = $this->workDirs[$i].$aRelativeFlp;
-
-        if (file_exists($lFlp))
-          $lResult[] = $lFlp;
+    if ($config->tryBeginLevelByN('settings', $settings)) {
+      if ($settings->count()) {
+        $this->settingsXmlNode = $settings;//!! to list
       }
 
-      $this->fileFlpsList[$aRelativeFlp] = $lResult;
-      return $lResult;
+      $config->endLevel('settings');
     }
   }
 
-  public function fileFirstExistDataGet($aRelativeFlp, $aIsAddToCache = true,
-    array $aTagsValues = array())
-  {
-    return $this->fileDataGet($this->fileFirstExistFlpGet($aRelativeFlp),
-      $aIsAddToCache, $aTagsValues);
+  private function getFileData($filePath, $isAddToCache = true,
+    array $tagsValues = array()) {
+    if ($this->cache->isValid) {
+      return $this->fileDatas[$filePath];
+    }
+    $result = fileToString($filePath);
+    $result = $this->processStringTags($result, $tagsValues);
+    if ($isAddToCache) {
+      $this->fileDatas[$filePath] = $result;
+    }
+    return $result;
   }
 
-  public function fileFirstExistFlpGet($aRelativeFlp)
-  {
-    if ($this->fileFirstExistFlpGetCheckInternal($aRelativeFlp, $lFlp))
-      return $lFlp;
-    else
-      throw new Exception('File not exist by RelativeFlp: "'.$aRelativeFlp.
-        '". '.'Work DIRs: "'.implode(', ', $this->workDirs).'"');
+  private function addFileDataToListIfExist(NamedList $list, $relativeFilePath) {
+    if ($this->getCheckFirstExistFilePath($relativeFilePath, $filePath)) {
+      $list->add($filePath, $this->getFileData($filePath, false));
+    }
   }
 
-  public function fileFirstExistFlpGetCheck($aRelativeFlp, &$aFlp)
-  {
-    return $this->fileFirstExistFlpGetCheckInternal($aRelativeFlp, $aFlp);
+  public function getExistFilePaths($relativeFilePath) {
+    if ($this->cache->isValid) {
+      return $this->filePathsList[$relativeFilePath];
+    }
+
+    $result = array();
+    for ($i = 0; $i < count($this->workDirs); $i++) {
+      $filePath = $this->workDirs[$i] . $relativeFilePath;
+      if (file_exists($filePath)) {
+        $result[] = $filePath;
+      }
+    }
+    $this->filePathsList[$relativeFilePath] = $result;
+    return $result;
   }
 
-  private function fileFirstExistFlpGetCheckInternal($aRelativeFlp, &$aFlp)
-  {
-    if ($this->cache->isValid)
-    {
-      if (isset($this->fileFlps[$aRelativeFlp]))
-      {
-        $aFlp = $this->fileFlps[$aRelativeFlp];
+  public function getFirstExistFileData($relativeFilePath, $isAddToCache = true,
+    array $tagsValues = array()) {
+    return $this->getFileData($this->getFirstExistFilePath($relativeFilePath),
+      $isAddToCache, $tagsValues);
+  }
+
+  public function getFirstExistFilePath($relativeFilePath) {
+    if ($this->getCheckFirstExistFilePathInternal($relativeFilePath, $filePath)) {
+      return $filePath;
+    } else {
+      throw new Exception('File not exist by relative file path: "' .
+        $relativeFilePath . '". ' . 'work dirs: "' .
+        implode(', ', $this->workDirs) . '"');
+    }
+  }
+
+  public function getCheckFirstExistFilePath($relativeFilePath, &$filePath) {
+    return $this->getCheckFirstExistFilePathInternal($relativeFilePath,
+      $filePath);
+  }
+
+  private function getCheckFirstExistFilePathInternal($relativeFilePath,
+    &$filePath) {
+    if ($this->cache->isValid) {
+      if (isset($this->filePaths[$relativeFilePath])) {
+        $filePath = $this->filePaths[$relativeFilePath];
         return true;
-      }
-      else
+      } else {
         return false;
-    }
-    else
-    { //!!! optimize
-      $lRelativeFilePaths = array();
+      }
+    } else { //!! optimize, check
+      $relativeFilePaths = array();
 
-      if (isset($this->filesByMl[$aRelativeFlp]))
-      {
-        $lFilePathParts = explode('.', $aRelativeFlp);
-        $lFilePathPartCount = count($lFilePathParts);
-        eAssert($lFilePathPartCount > 1);
-        $lFileName = $lFilePathParts[$lFilePathPartCount - 1 - 1];
-        $lFilePathParts[$lFilePathPartCount - 1 - 1] =
-          $lFileName.'_'.$this->page->language;
-        $lRelativeFilePaths[] = implode('.', $lFilePathParts);
-        $lFilePathParts[$lFilePathPartCount - 1 - 1] =
-          $lFileName.'_'.$this->page->set->defaultLanguage;
-        $lRelativeFilePaths[] = implode('.', $lFilePathParts);
+      if (isset($this->filesMl[$relativeFilePath])) {
+        $filePathParts = explode('.', $relativeFilePath);
+        $filePathPartCount = count($filePathParts);
+        eAssert($filePathPartCount > 1);
+        $fileName = $filePathParts[$filePathPartCount - 1 - 1];
+        $filePathParts[$filePathPartCount - 1 - 1] =
+          $fileName . '_' . $this->page->language;
+        $relativeFilePaths[] = implode('.', $filePathParts);
+        $filePathParts[$filePathPartCount - 1 - 1] =
+          $fileName . '_' .$this->page->settings->defaultLanguage;
+        $relativeFilePaths[] = implode('.', $filePathParts);
       }
 
-      $lRelativeFilePaths[] = $aRelativeFlp;
+      $relativeFilePaths[] = $relativeFilePath;
 
-      for ($i = 0, $l = count($this->workDirs); $i < $l; $i++)
-      {
-        for ($lRfpIndex = 0, $lRfpCount = count($lRelativeFilePaths);
-          $lRfpIndex < $lRfpCount; $lRfpIndex++)
-        {
-          $lFlp = $this->workDirs[$i].$lRelativeFilePaths[$lRfpIndex];
-
-          if (file_exists($lFlp))
-          {
-            $this->fileFlps[$aRelativeFlp] = $lFlp;
-            $aFlp = $lFlp;
+      for ($i = 0; $i < count($this->workDirs); $i++) {
+        for ($j = 0; $j < count($relativeFilePaths); $j++) {
+          $lFilePath = $this->workDirs[$i] . $relativeFilePaths[$j];
+          if (file_exists($lFilePath)) {
+            $this->filePaths[$relativeFilePath] = $lFilePath;
+            $filePath = $lFilePath;
             return true;
           }
         }
       }
-      //!!!
+      //!!end coment
       return false;
     }
   }
 
-  abstract public function fileFlpByLevelGet($aLevelFlp);
+  abstract public function getFileNameByLevel($leveFilePath);
 
-  protected function inheritedParamsGet(cXmlDocument $aXmlDocument)
-  {
-    $lResult = array();
+  protected function getInheritedParams(HierarchyList $config) {
+    $result = array();
+    $config->getCurrList()->getCheckNextByN('inherited', $result);
 
-    if ($aXmlDocument->nodes->getCheckNextByN('Inherited', $lInheritedsNode))
-      while ($lInheritedsNode->nodes->getCheckNext($lInheritedNode))
-        $lResult[] = $lInheritedNode->name;
+    if ($result === '') {
+      $result = array();
+    } else {
+      eAssert(is_array($result));
+    }
 
-    return $lResult;
+    return $result;
   }
 
-  public function initScriptAdd($aInitScript)
-  {
-    $this->initScript .= ($this->initScript ? CRLF : '').$aInitScript;
+  public function addInitScript($initScript) {
+    $this->initScript .= ($this->initScript ? CRLF : '') . $initScript;
   }
 
-  protected function loadFromCache(array $aCacheData)
-  {
-    $this->fileDatas    = $aCacheData['fileDatas'];
-    $this->fileFlps     = $aCacheData['fileFlps'];
-    $this->fileFlpsList = $aCacheData['fileFlpsList'];
-    $this->initScript   = $aCacheData['initScript'];
-    $this->tagsMl->loadFromString($aCacheData['tagsMl']);
-    $this->tags->loadFromString($aCacheData['tags']);
+  protected function loadFromCache(array $cacheData) {//!!not updated
+    $this->fileDatas     = $cacheData['fileDatas'];
+    $this->filePaths     = $cacheData['filePaths'];
+    $this->filePathsList = $cacheData['filePathsList'];
+    $this->initScript    = $cacheData['initScript'];
+    $this->tagsMl->loadFromString($cacheData['tagsMl']);
+    $this->tags->loadFromString($cacheData['tags']);
 
-    if (isset($aCacheData['settingsXml']))
+    if (isset($cacheData['settingsXml']))
     {
       $this->settingsXmlNode = new cXmlDocument();
-      $this->settingsXmlNode->loadFromString($aCacheData['settingsXml']);
+      $this->settingsXmlNode->loadFromString($cacheData['settingsXml']);
     }
   }
 
-  private function localizationTagValueGetCheck($aTagName, $aLanguage, &$aValue)
-  {
-    if ($this->tagsMl->getCheck($aLanguage, $lTagsByLanguage))
-      return $lTagsByLanguage->getCheck($aTagName, $aValue);
-    else
+  private function getCheckMlTagValue($tagName, $language, &$value) {
+    if ($this->tagsMl->getCheck($tagName, $tagsByLanguage)) {
+      return $tagsByLanguage->getCheck($language, $value);
+    } else {
       return false;
+    }
   }
 
-  public function localizationTagValueGet($aTagName)
-  {
-    if ($this->localizationTagValueGetCheck($aTagName, $this->page->language,
-      $lValue))
-      return $lValue;
-    else
-    if ($this->localizationTagValueGetCheck($aTagName,
-      $this->page->set->defaultLanguage, $lValue))
-      return $lValue;
-    else
-      throw new Exception('Can not get LocalizationTagValue for Tag: "'.
-        $aTagName.'" by language: "'.$this->page->language.'"');
+  public function getMlTagValue($tagName) {
+    if ($this->getCheckMlTagValue($tagName, $this->page->language, $value)) {
+      return $value;
+    } else if ($this->getCheckMlTagValue($tagName,
+      $this->page->settings->defaultLanguage, $value)) {
+      return $value;
+    } else {
+      throw new Exception('Can not get LocalizationTagValue for Tag: "' .
+        $tagName . '" by language: "' . $this->page->language . '"');
+    }
   }
 
-  protected function nameByLevelExplode($aLevelName, &$aName)
-  {
-    $lLevel = $aLevelName[0];
-    eAssert($aLevelName[1] == ':', 'Invalid LevelPrefix in LevelName: "'.
-      $aLevelName.'"');
-
-    if (strlen($aLevelName) > 2)
-      $aName = substr($aLevelName, 2);
-    else
-      $aName = '';
-    return $lLevel;
+  protected function explodeNameByLevel($levelName, &$name) {
+    $level = $levelName[0];
+    eAssert($levelName[1] == ':', 'Invalid LevelPrefix in LevelName: "' .
+      $levelName . '"');
+    if (strlen($levelName) > 2) {
+      $name = substr($levelName, 2);
+    } else {
+      $name = '';
+    }
+    return $level;
   }
 
-  protected function nameFullExplode($aNameFull, $aCount)
-  {
-    $lResult = explode('.', $aNameFull);
-    eAssert(count($lResult) == $aCount, 'Wrong NameFull: "'.$aNameFull.
-      '" for count: '.$aCount);
-    return $lResult;
+  protected function explodeFullName($nameFull, $count) {
+    $result = explode('.', $nameFull);
+    eAssert(count($result) == $count, 'Wrong NameFull: "' . $nameFull .
+      '" for count: ' . $count);
+    return $result;
   }
 
-  public function runDirGet($aRunDir)
-  {
-    $lParams = explode('.', $aRunDir);//!!'.' wrong delimiter
-    $lIsAbsolute = false;
+  public function getRunDir($runDir) {//!! check host
+    $params = explode('.', $runDir);//!!'.' wrong delimiter
+    $isAbsolute = false;
 
-    switch (count($lParams)) {
-    case 1:
-      $lRunDirName = $lParams[0];
-      break;
-    case 2:
-      $lRunDirName = $lParams[0];
-      eAssert($lParams[1] == 'host', 'Not supported param '.$lParams[1]);
-      $lIsAbsolute = true;
-      break;
-    default:
-      throw new Exception('Wrong RunDirName: "'.$aRunDir.'"');
+    switch (count($params)) {
+      case 1:
+        $runDirName = $params[0];
+        break;
+      case 2:
+        $runDirName = $params[0];
+        eAssert($params[1] === 'host', 'Not supported param ' . $params[1]);
+        $isAbsolute = true;
+        break;
+      default:
+        throw new Exception('Wrong RunDirName: "'.$runDir.'"');
     }
 
-    $lResult = $this->settings->rootDir.
-      ($lRunDirName ? $this->settings->rootRunDir.
-        (isset($this->page->set->runDirs[$lRunDirName])
-          ? $this->page->set->runDirs[$lRunDirName] : $lRunDirName.'/') : '');
+    $result = $this->settings->rootDir .
+      ($runDirName ? $this->settings->rootRunDir .
+        (isset($this->page->set->runDirs[$runDirName])
+          ? $this->page->set->runDirs[$runDirName] : $runDirName . '/') : '');
 
-    if ($lIsAbsolute)
-      $lResult = $this->urlHostAdd($lResult, true);
+    if ($isAbsolute)
+      $result = $this->addHostUrl($result, true);
 
-    return $lResult;
+    return $result;
   }
 
-  public function saveToCache(array &$aCacheData)
-  {
-    $aCacheData['fileDatas']    = $this->fileDatas;
-    $aCacheData['fileFlps']     = $this->fileFlps;
-    $aCacheData['fileFlpsList'] = $this->fileFlpsList;
-    $aCacheData['initScript']   = $this->initScript;
-    $aCacheData['tagsMl'] = $this->tagsMl->saveToString();
-    $aCacheData['tags'] = $this->tags->saveToString();
+  public function saveToCache(array &$cacheData) {//!! not updated
+    $cacheData['fileDatas']    = $this->fileDatas;
+    $cacheData['filePaths']     = $this->filePaths;
+    $cacheData['filePathsList'] = $this->filePathsList;
+    $cacheData['initScript']   = $this->initScript;
+    $cacheData['tagsMl'] = $this->tagsMl->saveToString();
+    $cacheData['tags'] = $this->tags->saveToString();
 
     if ($this->settingsXmlNode)
-      $aCacheData['settingsXml'] = $this->settingsXmlNode->saveToString();
+      $cacheData['settingsXml'] = $this->settingsXmlNode->saveToString();
   }
 
-  public function scriptsGet(NamedIndexedList $aScripts,
-    NamedIndexedList $aNotCollectedScripts)
-  {
-    for ($i = 0, $l = $this->scripts->count(); $i < $l; $i++)
-    {
-      $lWebFile = $this->scripts->getByI($i);
-      $lFlp = $this->fileFlpByLevelGet($lWebFile->relativeFlp);
-
-      if ($lWebFile->isNotCollect)
-        $aNotCollectedScripts->add($lFlp, $lFlp);
-      else
-      if (!$aScripts->exist($lFlp))//!! need to log file dublication
-        $aScripts->add($lFlp, $this->fileDataGet($lFlp, false));
+  private function getResources(NamedList $sources, NamedList $destinations,
+    $isDirect) {
+    for ($i = 0, $l = $sources->count(); $i < $l; $i++) {
+      $filePath = $this->getFileNameByLevel($sources->getByI($i));
+      if (!$destinations->exist($filePath)) {//!! need to log file dublication
+        $destinations->add($filePath, $isDirect ? $filePath
+          : $this->getFileData($filePath, false));
+      }
     }
   }
 
-  public function scriptsDefaultGet(NamedIndexedList $aScripts)
-  {
-    $this->fileDataAddToListIfExist($aScripts, 'web/.js');
-  }
+  protected function readSettings(cXmlNode $aXmlNode) {}//!to override
 
-  protected function settingsRead(cXmlNode $aXmlNode) //!to override
-  {
-  }
-
-  protected function settingsReadProcess()
-  {
-    if (isset($this->settingsXmlNode))
-    {
-      $this->settingsRead($this->settingsXmlNode);
-      if (!$this->cache->isValid)
+  protected function readProcessSettings() {//!!update
+    if (isset($this->settingsXmlNode)) {
+      $this->readSettings($this->settingsXmlNode);
+      if (!$this->cache->isValid) {
         $this->settingsXmlNode->allReadAsser();
+      }
     }
   }
 
-  protected function stringTagsProcess($aString, array $aTagsValues)
+  protected function processStringTags($string, array $tagsValues)
   {
-    $lResult = $aString;
-    $lResult = htmlspecialchars_decode($aString);//!!fix and delete
-
-    $lTagsAll = tagsFind($lResult);
-
+    $result = $string;
+    $result = htmlspecialchars_decode($string);//!!fix and delete
+    $tagsAll = tagsFind($result);
     $lTagsValues = array();
 
-    for ($i = 0, $l = count($lTagsAll); $i < $l; $i++)
-    {
-      $lTag = $lTagsAll[$i];
+    for ($i = 0; $i < count($tagsAll); $i++) {
+      $tag = $tagsAll[$i];
 
-      if (isset($aTagsValues[$lTag]))
-        $lTagsValues[$lTag] = $aTagsValues[$lTag];
-      else
-      {
-        $lTagArray = explode('|', $lTag);
+      if (isset($tagsValues[$tag])) {
+        $lTagsValues[$tag] = $tagsValues[$tag];
+      } else {
+        $tagParts = explode('|', $tag);
 
-        switch (count($lTagArray)) {
-        case 1:
-          $lTagKey = $lTagArray[0];
+        switch (count($tagParts)) {
+          case 1:
+            $tagKey = $tagParts[0];
 
-          switch ($lTagKey) {
-          case 'Language':
-            $lTagsValues[$lTag] = $this->page->language;
+            switch ($tagKey) {
+              case 'language':
+                $lTagsValues[$tag] = $this->page->language;
+                break;
+              case 'name':
+                $lTagsValues[$tag] = $this->name;
+                break;
+              default:
+                if (!isset($tagsValues[$tagKey])) {
+                  raiseNotSupported('tag', $tag);
+                }
+            }
             break;
-          case 'Name':
-            $lTagsValues[$lTag] = $this->name;
+          case 2:
+            $tagKey   = $tagParts[0];
+            $tagParam = $tagParts[1];
+
+            switch ($tagKey) {
+              case 'getFileNameByLevel':
+                $lTagsValues[$tag] = $this->getFileNameByLevel($tagParam);
+                break;
+              case 'getWorkDirByLevel':
+                $lTagsValues[$tag] = $this->getWorkDirByLevel($tagParam);
+                break;
+              case 'getRunDir':
+                $lTagsValues[$tag] = $this->getRunDir($tagParam);
+                break;
+              case 'ml':
+                $lTagsValues[$tag] = $this->getMlTagValue($tagParam);
+                break;
+              case 'tag':
+                $lTagsValues[$tag] = $this->tags->getByN($tagParam);
+                break;
+              case 'Host':
+                $lTagsValues[$tag] = $this->addHostUrl($tagParam, false);
+                break;
+              default:
+                raiseNotSupported('tag', $tag);
+            }
             break;
           default:
-            //!!tags in settings throw new Exception('Not suported tag: "'.$lTag.'"');
-          }
-
-          break;
-        case 2:
-          $lTagKey   = $lTagArray[0];
-          $lTagParam = $lTagArray[1];
-
-          switch ($lTagKey) {
-          case 'fileFlpByLevelGet'://!!Capitalized
-            $lTagsValues[$lTag] = $this->fileFlpByLevelGet($lTagParam);
-            break;
-          case 'workDirByLevelGet':
-            $lTagsValues[$lTag] = $this->workDirByLevelGet($lTagParam);
-            break;
-          case 'runDirGet':
-            $lTagsValues[$lTag] = $this->runDirGet($lTagParam);
-            break;
-          case 'ml':
-            $lTagsValues[$lTag] = $this->localizationTagValueGet($lTagParam);
-            break;
-          case 'Tag':
-            $lTagsValues[$lTag] = $this->tags->getByN($lTagParam);
-            break;
-          case 'Host':
-            $lTagsValues[$lTag] = $this->urlHostAdd($lTagParam, false);
-            break;
-          default:
-            throw new Exception('Not suported tag: "'.$lTag.'"');
-          }
-
-          break;
-        default:
-          throw new Exception('Not suported tag: "'.$lTag.'"');
+            raiseNotSupported('tag', $tag);
         }
       }
     }
 
-    if (count($lTagsAll))
-      $lResult = tagsReplaceArray($lResult, $lTagsValues);
-    return $lResult;
-  }
-
-  public function stylesDefaultGet(NamedIndexedList $aStyles)
-  {
-    $this->fileDataAddToListIfExist($aStyles, 'web/.css');
-  }
-
-  public function stylesGet(NamedIndexedList $aStyles,
-    NamedIndexedList $aNotCollectedStyles)
-  {
-    for ($i = 0, $l = $this->styles->count(); $i < $l; $i++)
-    {
-      $lWebFile = $this->styles->getByI($i);
-      $lFlp = $this->fileFlpByLevelGet($lWebFile->relativeFlp);
-
-      if ($lWebFile->isNotCollect)
-        $aNotCollectedStyles->add($lFlp, $lFlp);
-      else
-        $aStyles->add($lFlp, $this->fileDataGet($lFlp, false));
+    if (count($tagsAll)) {
+      $result = tagsReplaceArray($result, $lTagsValues);
     }
+    return $result;
   }
 
-  public function urlHostAdd($aUrl, $aIsAddSlash) {
-    return $_SERVER['HTTP_HOST'].($aIsAddSlash ? '/' : '').
-      str_replace('../', '', $aUrl);
+  public function addHostUrl($url, $isAddSlash) {
+    return $_SERVER['HTTP_HOST'].($isAddSlash ? '/' : '').
+      str_replace('../', '', $url);
   }
 
-  abstract public function workDirByLevelGet($aLevelName);
+  abstract public function getWorkDirByLevel($levelName);
 
-  public function workDirBuild($aAppName, $aSetName, $aPageName = '',
-    $aBlockName = '')
-  {
-    return $this->appDirGet($aAppName).'tpl/'.$aSetName.'/'.
-      ($aPageName ? $aPageName.'/': '').
-      ($aBlockName ? $aBlockName.'/': '');
+  public function buildWorkDir($appName, $setName, $pageName = '',
+    $blockName = '') {
+    return $this->getAppDir($appName) . 'tpl/' . $setName . '/' .
+      ($pageName ? $pageName . '/' : '') .
+      ($blockName ? $blockName . '/' : '');
   }
 }
 
-class cSet extends cMetaData
-{
-  public $appNames = array();
-  public $setNames = array();//!! cashe
-
-  public $title = '';
-  public $meta = '';
-
-  public $runDirs = array();
-
-  public function __construct($aAppName, $aSetName, cPage $aPage, cCache $aCache,
-    cPageSettings $aSettings)
-  {
-    parent::__construct($aAppName, $aSetName, $aPage, $aCache, $aSettings);
-
-    //!!fix work with defaultValue $this->initMt();
-  }
-
-  protected function configReadInternal(cXmlDocument $aXmlDocument)
-  {
-    parent::configReadInternal($aXmlDocument);
-
-    if ($aXmlDocument->nodes->getCheckNextByN('Title', $lTitleNode))
-      $this->title = $lTitleNode->getS();
-
-    if ($aXmlDocument->nodes->getCheckNextByN('Meta', $lMetaNode))
-      $this->meta = $lMetaNode->getS();
-
-    if ($aXmlDocument->nodes->getCheckNextByN('RunDirs', $lRunDirsNode))
-      while ($lRunDirsNode->nodes->getCheckNext($lRunDirNode))
-        $this->runDirs[$lRunDirNode->name] = $lRunDirNode->getS();
-  }
-
-  public function fileExternalFirstExistFlpGet($aRelativeFlp)
-  {
-    foreach ($this->appNames as $lAppName)
-    {
-      $lFlp = $this->appDirGet($lAppName).'ext/'.$aRelativeFlp;
-
-      if (file_exists($lFlp))
-        return $lFlp;
-    }
-
-    throw new Exception('File External not exist by RelativeFlp: "'.
-      $aRelativeFlp.'"'.'AppNames: "'.implode(', ', $this->appNames).'"');
-  }
-
-  public function fileFlpByLevelGet($aLevelFlp)
-  {
-    $lLevel = $this->nameByLevelExplode($aLevelFlp, $lFlp);
-    switch ($lLevel) {
-    case self::LEVEL_SET:
-      return $this->fileFirstExistFlpGet($lFlp);
-    case self::LEVEL_PAGE:
-      return $this->page->fileFirstExistFlpGet($lFlp);
-    case self::LEVEL_EXTERNAL:
-      return $this->fileExternalFirstExistFlpGet($lFlp);
-    case self::LEVEL_WEB:
-      return $lFlp;
-    default:
-      throw new Exception('Not supported Level: "'.$lLevel.'" in LevelFlp: "'.
-        $aLevelFlp.'"');
-    }
-  }
-
-  public function initMt()//!!private
-  {
-    if ($this->cache->isValid)
-      $this->loadFromCache($this->cache->data['set']);
-    else
-    {
-      $this->initMtInternal($this->appName, $this->name);
-      $this->initMtInternal('blocks', 'sys');
-      $this->configRead();
-    }
-
-    $this->settingsReadProcess();
-  }
-
-  private function initMtInternal($aAppName, $aSetName)
-  {
-    $this->appNames[$aAppName] = $aAppName;
-    $this->setNames[$aSetName] = $aSetName;
-    $lWorkDir = $this->workDirBuild($aAppName, $aSetName);
-
-    $lXmlDocument = $this->configCheck($lWorkDir, 'Set');
-
-    if (!$lXmlDocument)
-      return;
-
-    $lInheritedParams = $this->inheritedParamsGet($lXmlDocument);
-
-    for ($i = 0, $l = count($lInheritedParams); $i < $l; $i++)
-    {
-      $lNames = $this->nameFullExplode($lInheritedParams[$i], 2);
-      $this->initMtInternal($lNames[0], $lNames[1]);
-    }
-  }
-
-  protected function loadFromCache(array $aCacheData)
-  {
-    parent::loadFromCache($aCacheData);
-    $this->appNames = $aCacheData['appNames'];
-    $this->runDirs  = $aCacheData['runDirs'];
-  }
-
-  public function saveToCache(array &$aCacheData)
-  {
-    parent::saveToCache($aCacheData);
-    $aCacheData['appNames'] = $this->appNames;
-    $aCacheData['runDirs']  = $this->runDirs;
-  }
-
-  protected function settingsRead(cXmlNode $aXmlNode)
-  {
-    parent::settingsRead($aXmlNode);
-
-    if ($this->settings->context)
-      $this->settings->context->settingsReadSet($aXmlNode);
-  }
-
-  public function workDirByLevelGet($aLevelName)
-  {
-    $lLevel = $this->nameByLevelExplode($aLevelName, $lName);
-    switch ($this->nameByLevelExplode($aLevelName, $lName)) {
-    case self::LEVEL_SET:
-      if ($lName == '')
-      {
-        $lAppName = $this->appName;
-        $lSetName = $this->name;
-      }
-      else
-      {
-        $lNames = $this->nameFullExplode($lName, 2);
-
-        $lAppName = $lNames[0];
-        $lSetName = $lNames[1];
-      }
-
-      return $this->workDirBuild($lAppName, $lSetName);
-    case self::LEVEL_PAGE:
-      if ($lName == '')
-      {
-        $lAppName  = $this->appName;
-        $lSetName  = $this->name;
-        $lPageName = $this->page->name;
-      }
-      else
-      {
-        $lNames = $this->nameFullExplode($lName, 3);
-
-        $lAppName  = $lNames[0];
-        $lSetName  = $lNames[1];
-        $lPageName = $lNames[2];
-      }
-
-      return $this->workDirBuild($lAppName, $lSetName, $lPageName);
-    default:
-      throw new Exception('Not supported Level: "'.$lLevel.
-        '" in LevelName: "'.$aLevelName.'"');
-    }
-  }
-}
-
-class cPage extends cMetaData
-{
+class Page extends MetaData {
   private static $modules = array();
   private static $settingsInstance = null;
 
-  protected static $instance = null;
-
+  private $appNames    = array();
+  private $setNames    = array();
   private $blocksAll   = null;
-  private $blocksInfos = array();
+  private $blocksInfos = array();//!!array of record
 
   public $title = '';
   public $meta = '';
 
   public $language = '';
 
-  public $blocks      = array();
-  public $params      = null;
-  public $set         = null;
+  public $blocks = array();
+  public $params = null;
+  public $session = null;
 
-  public function __construct($aSetNameFull)
-  {
-    $lNames = $this->nameFullExplode($aSetNameFull, 2);
-    $lAppName = $lNames[0];
-    $lSetName = $lNames[1];
-    $lPageName = basename($_SERVER['SCRIPT_NAME'], '.php');
-    $lSettings = self::settingsGet();
-    $lSettings->init();
+  public function __construct($setNameFull) {
+    $names = $this->explodeFullName($setNameFull, 2);
+    $appName = $names[0];
+    $setName = $names[1];
+    $pageName = basename($_SERVER['SCRIPT_NAME'], '.php');
 
-    if (paramPostGetGetCheck('l', V_STRING, $this->language))//!!use params logic
+    $this->params = new NamedList($_SERVER['REQUEST_METHOD'] === 'POST'
+      ? $_POST : $_GET);
+    $this->session = new NamedList($_SESSION);
+
+    $settings = self::getSettings();
+    $settings->init($this->params, $this->session);
+
+    if ($this->params->getCheck('l', $this->language)) {
       $_SESSION['language'] = $this->language;
-    else
-    if (!paramSessionGetCheck('language', V_STRING, $this->language))
-      $this->language = $lSettings->defaultLanguage;
+    } else if (!$this->session->getCheck('language', $this->language)) {
+      $this->language = $settings->defaultLanguage;
+    }
 
-    $lCache = new cCache($lSettings->rootDir.$lAppName.'/tmp/cache/'.
-      $lSetName.'/'.$lPageName.'/'.($this->language ? $this->language.'/' : ''),
-      $lSettings->isCache);
+    $cache = new Cache($settings->rootDir . $appName . '/tmp/cache/' .
+      $setName . '/' . $pageName . '/' .
+      ($this->language ? $this->language . '/' : ''),
+      $settings->isCache);
 
-    $this->set = new cSet($lAppName, $lSetName, $this, $lCache, $lSettings);
-    $this->set->initMt();
+    parent::__construct($appName, $setName, $pageName, $this, $cache, $settings);
 
-    parent::__construct($lAppName, $lPageName, $this, $lCache, $lSettings);
+    $this->blocksAll = new NamedList();
 
-    $this->blocksAll = new NamedIndexedList();
+    if ($this->settings->context) {
+      $this->settings->context->init($this);
+    }
 
-    if ($this->settings->context)
-      $this->settings->context->pageSet($this);
-
-    $this->params = new cParams();
+    $this->appNames = array_merge(array($appName), $settings->appNames,
+      array('blocks'));
+    $this->setNames[] = $setName;
 
     $this->initMt();
   }
 
-  private function blockAdd($aBlockName, $aComponentNameFull,
-    $aParentBlockName)
-  {
-    $lNames = $this->nameFullExplode($aComponentNameFull, 3);
+  private function addBlock($blockName, $componentNameFull,
+    $parentBlockName) {
+    $names = $this->explodeFullName($componentNameFull, 3);
+    $appName       = $names[0];
+    $libraryName   = $names[1];
+    $componentName = $names[2];
 
-    $lAppName       = $lNames[0];
-    $lLibraryName   = $lNames[1];
-    $lComponentName = $lNames[2];
+    $moduleFilePath = $appName . '/lib/' . $libraryName . '/' . $componentName .
+      '/.php';
 
-    $lModuleFlp = $lAppName.'/lib/'.$lLibraryName.'/'.$lComponentName.'/'.
-      '.php';
+    $this->addModule($moduleFilePath);
 
-    $this->moduleAdd($lModuleFlp);
+    $class = strToCapitalize($appName) . '_' .
+      strToCapitalize($libraryName) . '_' . strToCapitalize($componentName);
 
-    $lClass = 'c'.strToCapitalize($lAppName).'_'.
-      strToCapitalize($lLibraryName).'_'.strToCapitalize($lComponentName);
+    $block = new $class($blockName, $componentNameFull, $this);
 
-    $lBlock = new $lClass($aBlockName, $aComponentNameFull, $this);
+    $this->blocksAll->add($blockName, $block);
 
-    $this->blocksAll->add($aBlockName, $lBlock);
-
-    if ($aParentBlockName)
-    {
-      $lParent = $this->blocksAll->getByN($aParentBlockName);
-      $lParent->blocks[] = $lBlock;
-      $lBlock->owner = $lParent;
+    if ($parentBlockName) {
+      $parent = $this->blocksAll->getByN($parentBlockName);
+      $parent->blocks[] = $block;
+      $block->owner = $parent;
+    } else {
+      $this->blocks[] = $block;
     }
-    else
-      $this->blocks[] = $lBlock;
   }
 
-  private function blocksAdd()
-  {
-    for ($i = 0, $l = count($this->blocksInfos); $i < $l; $i++)
-    {
-      $lBlocksInfo = $this->blocksInfos[$i];
-      $this->blockAdd(
-        $lBlocksInfo['BlockName'],
-        $lBlocksInfo['ComponentName'],
-        $lBlocksInfo['ParentBlockName']
+  private function addBlocks() {
+    for ($i = 0; $i < count($this->blocksInfos); $i++) {
+      $blocksInfo = $this->blocksInfos[$i];
+      $this->addBlock(
+        $blocksInfo['blockName'],
+        $blocksInfo['componentName'],
+        $blocksInfo['parentBlockName']
       );
     }
   }
 
-  protected function build()
-  {
-    for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
+  protected function build() {
+    for ($i = 0; $i < count($this->blocks); $i++) {
       $this->blocks[$i]->initRecursive();
+    }
 
-    $lBody = '';
-    for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
-      $lBody .= $this->blocks[$i]->contentGet();
+    $body = '';
+    for ($i = 0; $i < count($this->blocks); $i++) {
+      $body .= $this->blocks[$i]->getContent();
+    }
 
-    if ($this->cache->isValid)
-      $lResult = $this->fileFirstExistDataGet('.htm');
-    else
-    {
-      $lResult = $this->fileFirstExistDataGet('.htm', true, array(
-        'meta' => $this->set->meta.$this->meta,
-        'title'=> $this->set->title.
-          ($this->set->title && $this->title ? ' ': '').$this->title,
+    if ($this->cache->isValid) {
+      $result = $this->getFirstExistFileData('.htm');
+    } else {
+      $result = $this->getFirstExistFileData('.htm', true, array(
+        'meta' => $this->meta,
+        'title'=> $this->title,
         'css'  => $this->buildStyles(),
         'js'   => $this->buildScripts()
       ));
       $this->saveAllToCache();
     }
 
-    return $this->templateProcess($lResult, array(
-      'body'   => $lBody,
+    return $this->templateProcess($result, array(
+      'body'   => $body,
       'initJs' => $this->buildInitScripts()
     ));
   }
 
-  protected function buildByBlockNames(array $aBlockNames)
-  {
-    for ($i = 0, $l = count($aBlockNames); $i < $l; $i++)
-      $this->blocksAll->getByN($aBlockNames[$i])->initRecursive();
+  protected function buildByBlockNames(array $blockNames) {
+    for ($i = 0; $i < count($blockNames); $i++) {
+      $this->blocksAll->getByN($blockNames[$i])->initRecursive();
+    }
 
-    $lResult = array();
-    $lBlocks = array();
+    $result = array();
+    $blocks = array();
 
-    for ($i = 0, $l = count($aBlockNames); $i < $l; $i++)
-    {
+    for ($i = 0; $i < count($blockNames); $i++) {
       //!! add raise when block names has parent and children block names
-      $lBlock = array();
-      $lBlockName = $aBlockNames[$i];
-      $lBlock['data'] = $this->blocksAll->getByN($lBlockName)->contentGet();
+      $block = array();
+      $blockName = $blockNames[$i];
+      $block['data'] = $this->blocksAll->getByN($blockName)->getContent();
 
-      $lInitScripts = array();
-      $this->blocksAll->getByN($lBlockName)->
-        initScriptsGetRecursive($lInitScripts);
-      if (count($lInitScripts))
-        $lBlock['initJs'] = implode(CRLF, $lInitScripts);
+      $initScripts = array();
+      $this->blocksAll->getByN($blockName)->getInitScriptsRecursive($initScripts);
+      if (count($initScripts))
+        $block['initJs'] = implode(CRLF, $initScripts);
 
-      $lBlocks[$lBlockName] = $lBlock;
+      $blocks[$blockName] = $block;
     }
 
-    $lResult['blocks'] = $lBlocks;
+    $result['blocks'] = $blocks;
     //!! add $this->saveAllToCache();
-    return json_encode($lResult);
+    return json_encode($result);
   }
 
-  private function buildInitScripts()
-  {
-    $lResult = array();
-
-    if ($this->set->initScript)
-      $lResult[] = $this->set->initScript;
-    if ($this->initScript)
-      $lResult[] = $this->initScript;
-
-    for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
-      $this->blocks[$i]->initScriptsGetRecursive($lResult);
-
-    return implode(CRLF, $lResult);
+  private function buildInitScripts() {
+    $result = array();
+    if ($this->initScript) {
+      $result[] = $this->initScript;
+    }
+    for ($i = 0, $l = count($this->blocks); $i < $l; $i++) {
+      $this->blocks[$i]->getInitScriptsRecursive($result);
+    }
+    return implode(CRLF, $result);
   }
 
-  private function buildScripts()
-  {
-    $lScripts = new NamedIndexedList();
-    $lNotCollectedScripts = new NamedIndexedList();
+  private function buildResources(NamedList $resources,
+    NamedList $resourcesDirect, $prefix, $suffix, $resourceFileName) {
+    $result = '';
 
-    $this->set->scriptsDefaultGet($lScripts);
-    $this->set->scriptsGet($lScripts, $lNotCollectedScripts);
-    $this->scriptsDefaultGet($lScripts);
-    $this->scriptsGet($lScripts, $lNotCollectedScripts);
-
-    for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
-      $this->blocks[$i]->scriptsGetRecursive($lScripts, $lNotCollectedScripts);
-
-    $lResult = '';
-    $lPrefix = '<script language="JavaScript" type="text/javascript" src="';
-    $lSuffix = '"></script>';
-
-    for ($i = 0, $l = $lNotCollectedScripts->count(); $i < $l; $i++)
-      $lResult .= $lPrefix.$lNotCollectedScripts->getByI($i).$lSuffix;
-
-    if ($lScripts->count())
-    {
-      $lFlp = $this->cache->saveToFile($lScripts->valuesToSectionString(CRLF),
-        'script.js');
-
-      $lResult .= $lPrefix.$lFlp.$lSuffix;
+    for ($i = 0; $i < $resourcesDirect->count(); $i++) {
+      $result .= $prefix . $resourcesDirect->getByI($i) . $suffix;
     }
 
-    return $lResult;
-  }
+    if ($resources->count()) {
+      $filePath = $this->cache->saveToFile(
+        $resources->valuesToSectionString(CRLF), $resourceFileName);
 
-  private function buildStyles()
-  {
-    $lStyles = new NamedIndexedList(false);//!!
-    $lNotCollectedStyles = new NamedIndexedList(true);
-
-    $this->set->stylesDefaultGet($lStyles);
-    $this->set->stylesGet($lStyles, $lNotCollectedStyles);
-    $this->stylesDefaultGet($lStyles);
-    $this->stylesGet($lStyles, $lNotCollectedStyles);
-
-    for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
-      $this->blocks[$i]->stylesGetRecursive($lStyles, $lNotCollectedStyles);
-
-    $lResult = '';
-    $lPrefix = '<link rel="stylesheet" type="text/css" href="';
-    $lSuffix = '">';
-
-    for ($i = 0, $l = $lNotCollectedStyles->count(); $i < $l; $i++)
-      $lResult .= $lPrefix.$lNotCollectedStyles->getByI($i).$lSuffix;
-
-    if ($lStyles->count())
-    {
-      $lFlp = $this->cache->saveToFile($lStyles->valuesToSectionString(CRLF),
-        'styles.css');
-
-      $lResult .= $lPrefix.$lFlp. $lSuffix;
+      $result .= $prefix . $filePath . $suffix;
     }
 
-    return $lResult;
+    return $result;
   }
 
-  protected function configReadInternal(cXmlDocument $aXmlDocument)
+  private function buildScripts() {
+    $scripts = new NamedList();
+    $scriptsDirect = new NamedList();
+    $this->getScriptsRecursive($scripts, $scriptsDirect);
+    return $this->buildResources($scripts, $scriptsDirect,
+      '<script language="JavaScript" type="text/javascript" src="',
+      '"></script>', 'script.js');
+  }
+
+  private function buildStyles() {
+    $styles = new NamedList();
+    $stylesDirect = new NamedList();
+    $this->getStylesRecursive($styles, $stylesDirect);
+    return $this->buildResources($styles, $stylesDirect,
+      '<link rel="stylesheet" type="text/css" href="',
+      '">', 'styles.css');
+  }
+
+  private function getFirstExistExternalFilePath($relativePath)
   {
-    parent::configReadInternal($aXmlDocument);
+    foreach ($this->appNames as $appName) {
+      $path = $this->getAppDir($appName) . 'ext/' . $relativePath;
 
-    if ($aXmlDocument->nodes->getCheckNextByN('Title', $lTitleNode))
-      $this->title = $lTitleNode->getS();
+      if (file_exists($path)) {
+        return $path;
+      }
+    }
 
-    if ($aXmlDocument->nodes->getCheckNextByN('Meta', $lMetaNode))
-      $this->meta = $lMetaNode->getS();
+    throw new Exception('ExternalFile not exist by RelativePath: "' .
+      $relativePath . '"AppNames: "' . implode(', ', $this->appNames) . '"');
+  }
 
-    if ($aXmlDocument->nodes->getCheckNextByN('Blocks', $lBlocksNode))
-      while ($lBlocksNode->nodes->getCheckNext($lBlockNode))
-      {
-        $lBlockName     = $lBlockNode->name;
-        $lComponentName = $lBlockNode->attrs->getNextByN('Component')->getS();
+  protected function readConfigInternal(HierarchyList $config) {
+    parent::readConfigInternal($config);
+    $configList = $config->getCurrList();
+    $configList->getCheckNextByN('title', $this->title);
+    $configList->getCheckNextByN('meta', $this->meta);
 
-        if ($lBlockNode->attrs->getCheckNextByN('Parent',
-          $lParentBlockNameAttr))
-          $lParentBlockName = $lParentBlockNameAttr->getS();
-        else
-          $lParentBlockName = '';
+    if ($config->tryBeginLevelByN('blocks')) {
+      while ($config->tryBeginLevelNV($blockName, $block)) {
+        $componentName = $block->getNextByN('component');
+
+        if (!$block->getCheckNextByN('parent', $parentBlockName)) {
+          $parentBlockName = '';
+        }
 
         $this->blocksInfos[] = array(
-          'BlockName'       => $lBlockName,
-          'ComponentName'   => $lComponentName,
-          'ParentBlockName' => $lParentBlockName
+          'blockName'       => $blockName,
+          'componentName'   => $componentName,
+          'parentBlockName' => $parentBlockName
         );
+        $config->endLevel($blockName);
       }
-  }
 
-  public function fileFlpByLevelGet($aLevelFlp)
-  {
-    $lLevel = $this->nameByLevelExplode($aLevelFlp, $lFlp);
-
-    switch ($lLevel) {
-    case self::LEVEL_SET:
-      return $this->set->fileFirstExistFlpGet($lFlp);
-    case self::LEVEL_PAGE:
-      return $this->fileFirstExistFlpGet($lFlp);
-    case self::LEVEL_EXTERNAL:
-      return $this->set->fileExternalFirstExistFlpGet($lFlp);
-    case self::LEVEL_WEB:
-      return $lFlp;
-    default:
-      throw new Exception('Not supported Level: "'.$lLevel.'" in LevelFlp: "'.
-        $aLevelFlp.'"');
+      $config->endLevel('blocks');
     }
   }
 
-  private function initMt()
-  {
-    if ($this->cache->isValid)
+  public function getFileNameByLevel($leveFilePath) {
+    $level = $this->explodeNameByLevel($leveFilePath, $filePath);
+    switch ($level) {
+      case self::FL_PAGE:
+        return $this->getFirstExistFilePath($filePath);
+      case self::FL_EXTERNAL:
+        return $this->getFirstExistExternalFilePath($filePath);
+      case self::FL_WEB:
+        return $filePath;
+      default:
+        throw new Exception('Not supported Level: "' . $level .
+          '" in LevefilePath: "' . $leveFilePath . '"');
+    }
+  }
+
+  private function initMt() {
+    if ($this->cache->isValid) {
       $this->loadFromCache($this->cache->data['page']);
-    else
-    {
-      foreach ($this->set->appNames as $lAppName)
-        foreach ($this->set->setNames as $lSetName)
-          $this->initMtInternal($lAppName, $lSetName, $this->name);
+    } else {
+      foreach ($this->appNames as $appName) {
+        foreach ($this->setNames as $setName) {
+          $this->initMtInternal($appName, $setName, $this->name);
+        }
+      }
 
       $this->initMtInternal('blocks', 'sys', 'page');
-      $this->configRead();
+      $this->readConfig();
     }
 
-    $this->settingsReadProcess();
+    $this->readProcessSettings();//!!check
 
-    $this->blocksAdd();
+    $this->addBlocks();
   }
 
-  private function initMtInternal($aAppName, $aSetName, $aPageName)
-  {
-    $lWorkDir = $this->workDirBuild($aAppName, $aSetName, $aPageName);
+  private function initMtInternal($appName, $setName, $pageName) {
+    $workDir = $this->buildWorkDir($appName, $setName, $pageName);
+    $config = $this->checkConfig($workDir);
 
-    $lXmlDocument = $this->configCheck($lWorkDir, 'Page');
-
-    if (!$lXmlDocument)
+    if (!$config) {
       return;
+    }
 
-    $lInheritedParams = $this->inheritedParamsGet($lXmlDocument);
+    $inheritedParams = $this->getInheritedParams($config);
 
-    for ($i = 0, $l = count($lInheritedParams); $i < $l; $i++)
-    {
-      $lNames = $this->nameFullExplode($lInheritedParams[$i], 3);
-      $this->initMtInternal($lNames[0], $lNames[1], $lNames[2]);
+    for ($i = 0, $l = count($inheritedParams); $i < $l; $i++) {
+      $names = $this->explodeFullName($inheritedParams[$i], 3);
+      $this->initMtInternal($names[0], $names[1], $names[2]);
     }
   }
 
-  public static function instanceCreate($aSetNameFull)
-  {
-    eAssert(!isset(self::$instance), 'Page instance created');
-    $lClassName = get_called_class();
-    self::$instance = new $lClassName($aSetNameFull);
-  }
-
-  public static function instanceGet()
-  {
-    eAssert(isset(self::$instance), 'Page instance not created');
-    return self::$instance;
-  }
-
-  public static function instanceProcess($aSetNameFull)
-  {
+  public static function run($setNameFull) {
 //!!    try
 //    {
-      self::instanceCreate($aSetNameFull);
-      $lInstance = self::instanceGet();
-      $lInstance->process();
+      $className = get_called_class();
+      $page = new $className($setNameFull);
+      $page->process();
 /*!!    }
     catch (Exception $e)
     {
-      $lFunction = self::settingsGet()->onErrorFunction;
-      if ($lFunction)
-        p($lFunction($e));
+      $function = self::getSettings()->onErrorFunction;
+      if ($function)
+        p($function($e));
       else
         exceptionShow($e);
     }*/
   }
 
-  protected function loadFromCache(array $aCacheData)
-  {
-    parent::loadFromCache($aCacheData);
-    $this->blocksInfos = $aCacheData['blocksInfos'];
+  protected function loadFromCache(array $cacheData) {//!!check
+    parent::loadFromCache($cacheData);
+    $this->blocksInfos = $cacheData['blocksInfos'];
   }
 
-  public static function moduleAdd($aRelativeFlp)
-  {
-    self::moduleAddDirect(self::settingsGet()->rootDir.$aRelativeFlp);
+  public static function addModule($relativeFilePath) {
+    self::addModuleDirect(self::getSettings()->rootDir . $relativeFilePath);
   }
 
-  public static function moduleAddDirect($aFlp)
-  {
-    if (array_key_exists($aFlp, self::$modules))
-      self::$modules[$aFlp] = self::$modules[$aFlp] + 1;
-    else
-    {
-      require_once($aFlp);
-      self::$modules[$aFlp] = 1;
+  public static function addModuleDirect($filePath) {
+    if (array_key_exists($filePath, self::$modules)) {
+      self::$modules[$filePath] = self::$modules[$filePath] + 1;
+    } else {
+      require_once($filePath);
+      self::$modules[$filePath] = 1;
     }
   }
 
-  public function process()
-  {
-    if ($this->settings->context && !$this->settings->context->validate())
+  public function process() {
+    if ($this->settings->context && !$this->settings->context->validate()) {
       return;
-
-    if (paramPostGetGetCheck('blocks', V_STRING, $lParam))//!!
-      $lResult = $this->buildByBlockNames(explode(',', $lParam));
-    else
-    {
-      if ($this->settings->isTest)
-        $this->initScriptAdd('if (window.page) page.isTestMode = true;');
-
-      $lResult = $this->build();
     }
 
-    if ($this->settings->isProfile)
-      cPFHelper::stop();
+    if (false && paramPostGetGetCheck('blocks', V_STRING, $lParam)) {//!! params, delete false &&
+      $result = $this->buildByBlockNames(explode(',', $lParam));
+    } else {
+      if ($this->settings->isTest) {
+        $this->addInitScript('if (window.page) page.isTestMode = true;');
+      }
 
-    p($lResult);
+      $result = $this->build();
+    }
+
+    if ($this->settings->isProfile) {
+      cPFHelper::stop();
+    }
+
+    p($result);
   }
 
-  private function saveAllToCache()
-  {
-    $this->cache->data['set'] = array();
-    $this->set->saveToCache($this->cache->data['set']);
+  private function saveAllToCache() {
     $this->cache->data['page'] = array();
     $this->saveToCache($this->cache->data['page']);
 
-    $lBlocksCache = array();
-    for ($i = 0, $l = $this->blocksAll->count(); $i < $l; $i++)
-    {
-      $lBlock = $this->blocksAll->getByI($i);
-      $lBlocksCache[$lBlock->name] = array();
-      $lBlock->saveToCache($lBlocksCache[$lBlock->name]);
+    $blocksCache = array();
+    for ($i = 0, $l = $this->blocksAll->count(); $i < $l; $i++) {
+      $block = $this->blocksAll->getByI($i);
+      $blocksCache[$block->name] = array();
+      $block->saveToCache($blocksCache[$block->name]);
     }
-    $this->cache->data['blocks'] = $lBlocksCache;
+    $this->cache->data['blocks'] = $blocksCache;
 
     $this->cache->save();
   }
 
-  public function saveToCache(array &$aCacheData)
-  {
-    parent::saveToCache($aCacheData);
-    $aCacheData['blocksInfos'] = $this->blocksInfos;
+  public function saveToCache(array &$cacheData) {
+    parent::saveToCache($cacheData);
+    $cacheData['blocksInfos'] = $this->blocksInfos;
   }
 
-  public static function settingsCreate()
-  {
-    self::$settingsInstance = new cPageSettings();
+  public static function createSettings(array $settings) {
+    self::$settingsInstance = new PageSettings($settings);
   }
 
-  public static function settingsGet()
-  {
+  public static function getSettings() {
     eAssert(isset(self::$settingsInstance), 'Page settings not created');
     return self::$settingsInstance;
   }
 
-  protected function settingsRead(cXmlNode $aXmlNode)
-  {
-    parent::settingsRead($aXmlNode);
+  protected function readSettings(cXmlNode $aXmlNode) {//!!update
+    parent::readSettings($aXmlNode);
 
-    if ($this->settings->context)
+    if ($this->settings->context) {
       $this->settings->context->settingsReadPage($aXmlNode);
+    }
   }
 
-  public function templateProcess($aTemplate, $aValuesArray)
-  {
-    try
-    {
-      $aValuesArray['v'] = $aValuesArray;
-      extract($aValuesArray, EXTR_SKIP);
+  public function templateProcess($template, $valuesArray) {
+    try {
+      $valuesArray['v'] = $valuesArray;
+      extract($valuesArray, EXTR_SKIP);
       ob_start();
-      eval(' ?>'.$aTemplate.'<?php ');
+      eval(' ?>' . $template . '<? ');
       return ob_get_clean();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
       ob_get_clean();
 
-      $lFunction = $this->settings->onTemplateErrorFunction;
-      if ($lFunction)
-        return $lFunction($e);
-      else
+      $function = $this->settings->onTemplateErrorFunction;//!!check
+      if ($function) {
+        return $function($e);
+      } else {
         throw $e;
+      }
     }
   }
 
-  public function workDirByLevelGet($aLevelName)
-  {
-    switch ($this->nameByLevelExplode($aLevelName, $lName)) {
-    case self::LEVEL_SET:
-      if ($lName == '')
-      {
-        $lAppName = $this->appName;
-        $lSetName = $this->set->name;
-      }
-      else
-      {
-        $lNames = $this->nameFullExplode($lName, 2);
-
-        $lAppName = $lNames[0];
-        $lSetName = $lNames[1];
-      }
-
-      return $this->workDirBuild($lAppName, $lSetName);
-    case self::LEVEL_PAGE:
-      if ($lName == '')
-      {
-        $lAppName  = $this->appName;
-        $lSetName  = $this->set->name;
-        $lPageName = $this->name;
-      }
-      else
-      {
-        $lNames = $this->nameFullExplode($lName, 3);
-
-        $lAppName  = $lNames[0];
-        $lSetName  = $lNames[1];
-        $lPageName = $lNames[2];
-      }
-
-      return $this->workDirBuild($lAppName, $lSetName, $lPageName);
-    default:
-      throw new Exception('Not supported Level: "'.$lLevel.
-        '" in LevelName: "'.$aLevelName.'"');
+  public function getWorkDirByLevel($levelName) {
+    $level = $this->explodeNameByLevel($levelName, $lName);
+    switch ($level) {//!!add defalt prefix, delete case
+      case self::FL_PAGE:
+        if ($lName == '') {
+          $appName  = $this->appName;
+          $setName  = $this->setName;
+          $pageName = $this->name;
+        } else {
+          $names = $this->explodeFullName($lName, 3);
+          $appName  = $names[0];
+          $setName  = $names[1];
+          $pageName = $names[2];
+        }
+        return $this->buildWorkDir($appName, $setName, $pageName);
+      default:
+        throw new Exception('Not supported Level: "' . $level .
+          '" in LevelName: "' . $levelName . '"');
     }
   }
 }
 
-abstract class cBlock extends cMetaData
-{
+abstract class Block extends MetaData {
   private $cacheHtml = '';
 
   public $blocks = array();
-
   public $owner = null;
 
   public $isCache          = false;
   public $isBuildOnRequest = false;
 
-  public function __construct($aBlockName, $aComponentNameFull, cPage $aPage)
-  {
-    parent::__construct($aPage->appName, $aBlockName, $aPage, $aPage->cache,
-      $aPage->settings);
+  public function __construct($blockName, $componentNameFull, Page $page) {
+    parent::__construct($page->appName, $page->setName, $blockName, $page, $page->cache,
+      $page->settings);
 
-    $this->initMt($aComponentNameFull);
+    $this->initMt($componentNameFull);
   }
 
-  protected function configReadInternal(cXmlDocument $aXmlDocument)
-  {
-    parent::configReadInternal($aXmlDocument);
+  protected function readConfigInternal(HierarchyList $config) {
+    parent::readConfigInternal($aXmlDocument);
+    $configList = $config->getCurrList();
 
-    $lAttr = null;
-    if ($aXmlDocument->attrs->getCheckNextByN('IsCache', $lAttr))
-      $this->isCache = $lAttr->getB();
-    if ($aXmlDocument->attrs->getCheckNextByN('IsBuildOnRequest', $lAttr))
-      $this->isBuildOnRequest = $lAttr->getB();
-  }
-
-  final public function contentGet()
-  {
-    if ($this->isBuildOnRequest &&
-      !$this->page->params->blocks->exist($this->name))
-      return '';
-
-    if ($this->isCache)
-    {
-      if (!$this->cache->isValid)
-        $this->cacheHtml = $this->build();
-      return $this->cacheHtml;
+    $configObject = null;
+    if ($aXmlDocument->getCheckNextOByN('isCache', $configObject)) {
+      $this->isCache = $configObject->getB();
     }
-    else
+    if ($aXmlDocument->getCheckNextByN('isBuildOnRequest', $configObject)) {
+      $this->isBuildOnRequest = $configObject->getB();
+    }
+  }
+
+  final public function getContent() {
+    if ($this->isBuildOnRequest
+      && !$this->page->params->blocks->exist($this->name)) {
+      return '';
+    }
+
+    if ($this->isCache) {
+      if (!$this->cache->isValid) {
+        $this->cacheHtml = $this->build();
+      }
+      return $this->cacheHtml;
+    } else {
       return $this->build();
+    }
   }
 
   abstract public function build();//!to override
 
-  public function fileFlpByLevelGet($aLevelFlp)
-  {
-    if ($this->nameByLevelExplode($aLevelFlp, $lFlp) == self::LEVEL_BLOCK)
-      return $this->fileFirstExistFlpGet($lFlp);
-    else
-      return $this->page->fileFlpByLevelGet($aLevelFlp);
+  public function getFileNameByLevel($leveFilePath) {
+    if ($this->explodeNameByLevel($leveFilePath, $filePath) === self::FL_BLOCK) {
+      return $this->getFirstExistFilePath($filePath);
+    } else {
+      return $this->page->getFileNameByLevel($leveFilePath);
+    }
   }
 
-  protected function init()//!to override
-  {
-    $this->settingsReadProcess();
+  protected function init() {//!to override
+    $this->readProcessSettings();
   }
 
-  private function initMt($aComponentNameFull)
-  {
-    if ($this->cache->isValid)
+  private function initMt($componentNameFull) {
+    if ($this->cache->isValid) {
       $this->loadFromCache($this->cache->data['blocks'][$this->name]);
-    else
-    {
+    } else {
       $this->initMtInternal(
-        $aComponentNameFull,
+        $componentNameFull,
         $this->page->workDirs,
-        $this->appName.'.'.$this->page->set->name.'.'.$this->page->name.'.'.
-          $this->name);
-      $this->configRead();
+        $this->appName . '.' . $this->page->setName . '.' .
+          $this->page->name . '.'.
+        $this->name);
+      $this->readConfig();
     }
   }
 
-  private function initMtInternal($aComponentNameFull, array $aPageWorkDirs,
-    $aBlockNameFull)
-  {
-    if ($aBlockNameFull)
-    {
-      $lNames = $this->nameFullExplode($aBlockNameFull, 4);
+  private function initMtInternal($componentNameFull, array $pageWorkDirs,
+    $blockNameFull) {
+    if ($blockNameFull) {
+      $names = $this->explodeFullName($blockNameFull, 4);
 
-      $lAppName   = $lNames[0];
-      $lSetName   = $lNames[1];
-      $lPageName  = $lNames[2];
-      $lBlockName = $lNames[3];
+      $appName   = $names[0];
+      $setName   = $names[1];
+      $pageName  = $names[2];
+      $blockName = $names[3];
 
-      $lWorkDir = $this->workDirBuild($lAppName, $lSetName, $lPageName,
-        $lBlockName);
+      $workDir = $this->buildWorkDir($appName, $setName, $pageName, $blockName);
 
-      $lXmlDocument = $this->configCheck($lWorkDir, 'Block');
+      $config = $this->checkConfig($workDir);
 
-      if ($lXmlDocument)
-      {
-        $lInheritedParams = $this->inheritedParamsGet($lXmlDocument);
+      if ($config) {
+        $inheritedParams = $this->getInheritedParams($config);
 
-        if (count($lInheritedParams))
-          for ($i = 0, $l = count($lInheritedParams); $i < $l; $i++)
-            $this->initMtInternal($aComponentNameFull, $aPageWorkDirs,
-              $lInheritedParams[$i]);
-        else
-          $this->initMtInternal($aComponentNameFull, $aPageWorkDirs, '');
+        if (count($inheritedParams)) {
+          for ($i = 0, $l = count($inheritedParams); $i < $l; $i++) {
+            $this->initMtInternal($componentNameFull, $pageWorkDirs,
+              $inheritedParams[$i]);
+          }
+        } else {
+          $this->initMtInternal($componentNameFull, $pageWorkDirs, '');
+        }
+      } else {
+        $this->initMtInternal($componentNameFull, $pageWorkDirs, '');
       }
-      else
-        $this->initMtInternal($aComponentNameFull, $aPageWorkDirs, '');
-    }
-    else
-    if (count($aPageWorkDirs))
-    {
-      for ($i = 1, $l = count($aPageWorkDirs); $i < $l; $i++)//! 1 - Last WorkDir not used
+    } else if (count($pageWorkDirs)) {
+      for ($i = 1, $l = count($pageWorkDirs); $i < $l; $i++)//! 1 - Last WorkDir not used
       {
-        $lWorkDir = $aPageWorkDirs[$i].$this->name.'/';
+        $workDir = $pageWorkDirs[$i].$this->name . '/';
 
-        $lXmlDocument = $this->configCheck($lWorkDir, 'Block');
+        $config = $this->checkConfig($workDir);
 
-        if ($lXmlDocument)
-        {
-          $lInheritedParams = $this->inheritedParamsGet($lXmlDocument);
+        if ($config) {
+          $inheritedParams = $this->getInheritedParams($config);
 
-          if (count($lInheritedParams))
+          if (count($inheritedParams)) {
             throw new Exception('Not supported Inherited for block by pages');
+          }
         }
 
       }
-      $this->initMtInternal($aComponentNameFull, array(), '');
-    }
-    else
-    if ($aComponentNameFull)
-    {
-      $lNames = $this->nameFullExplode($aComponentNameFull, 3);
+      $this->initMtInternal($componentNameFull, array(), '');
+    } else if ($componentNameFull) {
+      $names = $this->explodeFullName($componentNameFull, 3);
 
-      $lAppName       = $lNames[0];
-      $lLibraryName   = $lNames[1];
-      $lComponentName = $lNames[2];
+      $appName       = $names[0];
+      $libraryName   = $names[1];
+      $componentName = $names[2];
 
-      $lWorkDir = $this->appDirGet($lAppName).'tpl/lib/'.
-        $lLibraryName.'/'.$lComponentName.'/';
+      $workDir = $this->getAppDir($appName) . 'tpl/lib/' .
+        $libraryName . '/' . $componentName . '/';
 
-      $lXmlDocument = $this->configCheck($lWorkDir, 'Block');
+      $config = $this->checkConfig($workDir, 'Block');
 
-      if ($lXmlDocument)
-      {
-        $lInheritedParams = $this->inheritedParamsGet($lXmlDocument);//!!Add InheritedType Component
+      if ($config) {
+        $inheritedParams = $this->getInheritedParams($config);//!!Add InheritedType Component
 
-        for ($i = 0, $l = count($lInheritedParams); $i < $l; $i++)
-          $this->initMtInternal($lInheritedParams[$i], array(), '');
+        for ($i = 0, $l = count($inheritedParams); $i < $l; $i++) {
+          $this->initMtInternal($inheritedParams[$i], array(), '');
+        }
       }
+    } else {
+      throw new Exception('Can not init BlockMt');
     }
-    else
-      throw new Exception('Can not init cBlockMt');
   }
 
-  final public function initRecursive()
-  {
+  final public function initRecursive() {
     if ($this->isBuildOnRequest &&
-      !$this->page->params->blocks->exist($this->name))
+      !$this->page->params->blocks->exist($this->name)) {
       return;
-
-    if ($this->isCache && $this->cache->isValid)
+    }
+    if ($this->isCache && $this->cache->isValid) {
       return;
-
+    }
     $this->init();
-
-    for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
+    for ($i = 0, $l = count($this->blocks); $i < $l; $i++) {
       $this->blocks[$i]->initRecursive();
-  }
-
-  public function initScriptsGetRecursive(array &$aInitScripts)
-  {
-    if ($this->isBuildOnRequest &&
-      !$this->page->params->blocks->exist($this->name))//!!not work for included bloks
-      return;
-
-    if ($this->initScript)
-      $aInitScripts[] = $this->initScript;
-
-    for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
-      $this->blocks[$i]->initScriptsGetRecursive($aInitScripts);
-  }
-
-  protected function loadFromCache(array $aCacheData)
-  {
-    parent::loadFromCache($aCacheData);
-    $this->isCache = $aCacheData['isCache'];
-
-    if ($this->isCache)
-      $this->cacheHtml = $aCacheData['cacheHtml'];
-  }
-
-  public function saveToCache(array &$aCacheData)
-  {
-    parent::saveToCache($aCacheData);
-    $aCacheData['isCache'] = $this->isCache;
-
-    if ($this->isCache)
-      $aCacheData['cacheHtml'] = $this->cacheHtml;
-  }
-
-  public function scriptsGetRecursive(NamedIndexedList $aScripts,
-    NamedIndexedList $aNotCollectedScripts)
-  {
-    $this->scriptsDefaultGet($aScripts);
-    $this->scriptsGet($aScripts, $aNotCollectedScripts);
-
-    for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
-      $this->blocks[$i]->scriptsGetRecursive($aScripts, $aNotCollectedScripts);
-  }
-
-  public function stylesGetRecursive(NamedIndexedList $aStyles,
-    NamedIndexedList $aNotCollectedStyles)
-  {
-    $this->stylesDefaultGet($aStyles);
-    $this->stylesGet($aStyles, $aNotCollectedStyles);
-
-    for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
-      $this->blocks[$i]->stylesGetRecursive($aStyles, $aNotCollectedStyles);
-  }
-
-  protected function templateProcess($aTemplate, $aValuesArray)
-  {
-    return $this->page->templateProcess($aTemplate, $aValuesArray);
-  }
-
-  public function workDirByLevelGet($aLevelName)
-  {
-    if ($this->nameByLevelExplode($aLevelName, $lName) == self::LEVEL_BLOCK)
-    {
-      if ($lName == '')
-      {
-        $lAppName   = $this->appName;
-        $lSetName   = $this->page->set->name;
-        $lPageName  = $this->page->name;
-        $lBlockName = $this->name;
-      }
-      else
-      {
-        $lNames = $this->nameFullExplode($lName, 4);
-
-        $lAppName   = $lNames[0];
-        $lSetName   = $lNames[1];
-        $lPageName  = $lNames[2];
-        $lBlockName = $lNames[3];
-      }
-
-      return $this->workDirBuild($lAppName, $lSetName, $lPageName, $lBlockName);
     }
-    else
-      return $this->page->workDirByLevelGet($aLevelName);
+  }
+
+  public function getInitScriptsRecursive(array &$initScripts) {
+    if ($this->isBuildOnRequest &&
+      !$this->page->params->blocks->exist($this->name)) {//!!not work for included bloks
+      return;
+    }
+    if ($this->initScript) {
+      $initScripts[] = $this->initScript;
+    }
+    for ($i = 0, $l = count($this->blocks); $i < $l; $i++) {
+      $this->blocks[$i]->getInitScriptsRecursive($initScripts);
+    }
+  }
+
+  protected function loadFromCache(array $cacheData) {
+    parent::loadFromCache($cacheData);
+    $this->isCache = $cacheData['isCache'];
+
+    if ($this->isCache) {
+      $this->cacheHtml = $cacheData['cacheHtml'];
+    }
+  }
+
+  public function saveToCache(array &$cacheData) {
+    parent::saveToCache($cacheData);
+    $cacheData['isCache'] = $this->isCache;
+
+    if ($this->isCache) {
+      $cacheData['cacheHtml'] = $this->cacheHtml;
+    }
+  }
+
+  protected function templateProcess($template, $valuesArray) {
+    return $this->page->templateProcess($template, $valuesArray);
+  }
+
+  public function getWorkDirByLevel($levelName) {
+    if ($this->explodeNameByLevel($levelName, $lName) === self::FL_BLOCK) {
+      if ($lName == '') {
+        $appName   = $this->appName;
+        $setName   = $this->page->setName;
+        $pageName  = $this->page->name;
+        $blockName = $this->name;
+      } else {
+        $names = $this->explodeFullName($lName, 4);
+        $appName   = $names[0];
+        $setName   = $names[1];
+        $pageName  = $names[2];
+        $blockName = $names[3];
+      }
+      return $this->buildWorkDir($appName, $setName, $pageName, $blockName);
+    } else {
+      return $this->page->getWorkDirByLevel($levelName);
+    }
   }
 }
-
-//!Init
-cPage::settingsCreate();
 ?>

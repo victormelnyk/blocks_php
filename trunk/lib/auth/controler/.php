@@ -1,7 +1,7 @@
-<?php
-cPage::moduleAdd('blocks/lib/db_view/controler/.php');
+<?
+Page::addModule('blocks/lib/db_view/controler/.php');
 
-class cBlocks_Auth_Controler extends cBlocks_DbView_Controler
+class Blocks_Auth_Controler extends Blocks_DbView_Controler
 {
   public function build()
   {

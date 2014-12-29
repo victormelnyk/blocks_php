@@ -1,6 +1,6 @@
-<?php
+<?
 //!!$aLogin -> $aUserLogin
-abstract class cBlocks_Auth_SignUp extends cBlock
+abstract class Blocks_Auth_SignUp extends Block
 {
   private $status    = false;
   private $errorType = '';
@@ -10,7 +10,7 @@ abstract class cBlocks_Auth_SignUp extends cBlock
 
   public function build()
   {
-    return $this->templateProcess($this->fileFirstExistDataGet('.htm'), array(
+    return $this->templateProcess($this->getFirstExistFileData('.htm'), array(
       'status'    => $this->status,
       'errorType' => $this->errorType,
       'params'    => $this->params)
@@ -59,15 +59,15 @@ abstract class cBlocks_Auth_SignUp extends cBlock
 
   protected function onError($aErrorType)
   {
-    $this->initScriptAdd('page.logger.error("'.
-      $this->localizationTagValueGet($aErrorType).'")');
+    $this->addInitScript('page.logger.error("'.
+      $this->getMlTagValue($aErrorType).'")');
   }
 
   protected function onSuccess()//!!redirect on server
   {
     $this->settings->context->login($this->params['login'],
       $this->params['password'], $this->homePageGet());
-    $this->initScriptAdd('window.location.href = "'.$this->homePageGet().'"');
+    $this->addInitScript('window.location.href = "'.$this->homePageGet().'"');
   }
 
   private function paramsReadCheckInternal(&$aErrorType)

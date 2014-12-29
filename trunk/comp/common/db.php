@@ -1,4 +1,4 @@
-<?php
+<?
 //!uses
 //PDO
 
@@ -106,7 +106,7 @@ abstract class DbBase {
   }
 
   private function executeInternal($sql, array $params) {
-    //!!!if (cPage::settingsGet()->isProfile)//!!delete using cPage
+    //!!!if (Page::getSettings()->isProfile)//!!delete using Page
     //  cPFHelper::sqlProfile($this, $sql, $params);
 
     $statement = $this->pdo->prepare($sql);

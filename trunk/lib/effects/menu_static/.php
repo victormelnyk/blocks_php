@@ -1,7 +1,7 @@
-<?php
-cPage::moduleAdd('blocks/comp/helpers/recordset_tree_adaptation/.php');
+<?
+Page::addModule('blocks/comp/helpers/recordset_tree_adaptation/.php');
 
-class cBlocks_Effects_MenuStatic extends cBlock
+class Blocks_Effects_MenuStatic extends Block
 {
   private $activeItemExists = false;
 
@@ -9,7 +9,7 @@ class cBlocks_Effects_MenuStatic extends cBlock
 
   public function build()
   {
-    return $this->templateProcess($this->fileFirstExistDataGet('.htm'),
+    return $this->templateProcess($this->getFirstExistFileData('.htm'),
       array('recordset' => $this->recordset));
   }
 
@@ -67,9 +67,9 @@ class cBlocks_Effects_MenuStatic extends cBlock
     return $lId;
   }
 
-  protected function settingsRead(cXmlNode $aXmlNode)
+  protected function readSettings(cXmlNode $aXmlNode)
   {
-    parent::settingsRead($aXmlNode);
+    parent::readSettings($aXmlNode);
 
     $this->nodesProcess(
       $aXmlNode->nodes->getNextByN('MenuStaticItems')->nodes, 0, 0);

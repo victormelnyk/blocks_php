@@ -1,5 +1,5 @@
-<?php
-class cBlocks_Sys_NamedList extends cBlock
+<?
+class Blocks_Sys_NamedList extends Block
 {
   public function build()
   {
@@ -8,10 +8,10 @@ class cBlocks_Sys_NamedList extends cBlock
     for ($i = 0, $l = count($this->blocks); $i < $l; $i++)
     {
       $lBlock = $this->blocks[$i];
-      $lValues[$lBlock->name] = $lBlock->contentGet();
+      $lValues[$lBlock->name] = $lBlock->getContent();
     }
 
-    return $this->templateProcess($this->fileFirstExistDataGet('.htm'),
+    return $this->templateProcess($this->getFirstExistFileData('.htm'),
       $lValues);
   }
 }

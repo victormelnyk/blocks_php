@@ -1,5 +1,5 @@
-<?php
-class cBlocks_DbView_Order extends cBlock
+<?
+class Blocks_DbView_Order extends Block
 {
   public function build()
   {
@@ -7,13 +7,13 @@ class cBlocks_DbView_Order extends cBlock
     {
       //!for cache
       if (!$this->cache->isValid)
-        $this->fileFirstExistDataGet('.htm');
+        $this->getFirstExistFileData('.htm');
 
       return '';
     }
 
     $lOrder = $this->owner->order;
-    return $this->templateProcess($this->fileFirstExistDataGet('.htm'), array(
+    return $this->templateProcess($this->getFirstExistFileData('.htm'), array(
       'paramName'          => $lOrder->paramName,
       'directionParamName' => $lOrder->directionParamName,
       'options'            => $lOrder->asArrayGet(),

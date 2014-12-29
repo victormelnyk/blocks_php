@@ -1,4 +1,4 @@
-<?php
+<?
 //!consts
 define('CRLF', "\r\n");
 //!enums
@@ -150,13 +150,13 @@ function insertBeforeArrayValue($array, $key, $value, $keyBefore) {
       $lArray[$key] = $value;
       $inserted = true;
     }
-    $items[$lKey] = $lValue;
+    $lArray[$lKey] = $lValue;
   }
   eAssert($inserted);
   return $lArray;
 }
 
-function margeArray($array1, $array2) {
+function margeArray(array $array1, array $array2) {
   $result = $array1;
   foreach ($array2 as $key => $value) {
     $action = 'update';
@@ -166,20 +166,25 @@ function margeArray($array1, $array2) {
       $keyPartCount = count($keyParts);
       eAssert($keyPartCount > 1);
 
-      switch ($keyParts[0]) {
-        case 'd':
-          eAssert($keyPartCount === 2);
-          $action = 'delete';
-          $key = $keyParts[1];
-          break;
+      switch ($key[1]) {
         case 'b':
           eAssert($keyPartCount == 3);
           $action = 'before';
           $keyBefore = $keyParts[1];
           $key = $keyParts[2];
           break;
+        case 'd':
+          eAssert($keyPartCount === 2);
+          $action = 'delete';
+          $key = $keyParts[1];
+          break;
+        case 'c':
+          eAssert($keyPartCount === 2);
+          $action = 'concat';
+          $key = $keyParts[1];
+          break;
         default:
-          raiseNotSupported('ActionPrefix', $keyParts[1]);
+          raiseNotSupported('ActionPrefix', $key[1]);
           break;
       }
     }
@@ -193,7 +198,7 @@ function margeArray($array1, $array2) {
           eAssert(isset($value[0]), 'Array is not sequential');
           $result[$key] = array_merge($result[$key], $value);
         } else {
-          $result[$key] += $value;
+          $result[$key] .= $value;
         }
         break;
       case 'delete':
@@ -383,10 +388,14 @@ class NamedList {
 
   public function getByI($index) {
     $name = '';
-    return $this->getNameValueByI($index, $name);
+    return $this->getNVByI($index, $name);
   }
 
-  public function getNameValueByI($index, &$name) {
+  public function getItems() {
+    return $this->items;
+  }
+
+  public function getNVByI($index, &$name) {
     $arrayKeys = array_keys($this->items);
     $name = $arrayKeys[$index];
     return $this->getByN($name);
@@ -413,11 +422,26 @@ class NamedList {
       $nameBefore);
   }
 
+  public function loadFromJsonFile($filePath) {
+    $items = json_decode(fileToString($filePath), true);//!!!not check hierarchy
+    if (!$items) {
+      throw new Exception('Can not load JsonFile: "' . $filePath .
+        '" content: :' . fileToString($filePath));
+    }
+    foreach ($items as $name => $value) {
+      $this->add($name, $value);
+    }
+  }
+
   public function loadFromString($value) {
     $items = unserialize($value);
     foreach ($items as $name => $value) {
       $this->add($name, $value);
     }
+  }
+
+  public function marge(array $items) {
+    $this->items = margeArray($this->items, $items);
   }
 
   public function saveToString() {
@@ -436,17 +460,34 @@ class LinearList extends NamedList {
     $this->position = -1;
   }
 
+  public function deleteCurrByN($name) {
+    eAssert($this->position > -1);
+    $value = $this->getNVByI($this->position, $lName);
+    eAssert($name === $lName);
+    $this->delete($name);
+    $this->position--;
+  }
+
   public function existNext() {
     return $this->position + 1 < $this->count();
   }
 
   public function existNextByN($name) {
-    $result = $this->position + 1 < $this->count();
+    $lName = '';
+    $result = $this->existNextN($lName);
 
     if ($result) {
-      $lName = '';
-      $this->getNameValue($this->position + 1, $lName);
       $result = $name === $lName;
+    }
+
+    return $result;
+  }
+
+  public function existNextN(&$name) {
+    $result = $this->existNext();
+
+    if ($result) {
+      $this->getNVByI($this->position + 1, $name);
     }
 
     return $result;
@@ -454,7 +495,9 @@ class LinearList extends NamedList {
 
   public function finalize() {
     if ($this->position !== $this->count() - 1) {
-      throw new Exception('Not all items processed' . $this->saveToString());
+      throw new Exception('Not all items processed. Position: ' .
+        $this->position . ' Count: ' . $this->count() . ' ' .
+        $this->saveToString());
     }
   }
 
@@ -468,6 +511,14 @@ class LinearList extends NamedList {
 
   public function getCheckNextByN($name, &$value) {
     if (!$this->existNextByN($name)) {
+      return false;
+    }
+    $value = $this->getNextByN($name);
+    return true;
+  }
+
+  public function getCheckNextNV(&$name, &$value) {
+    if (!$this->existNextN($name)) {
       return false;
     }
     $value = $this->getNextByN($name);
@@ -488,9 +539,15 @@ class LinearList extends NamedList {
     return $result;
   }
 
+  public function getNextN(&$name) {
+    $result = $this->getNVByI($this->position + 1, $name);
+    $this->position++;
+    return $result;
+  }
+
   public function getNextByN($name) {
     $lName = '';
-    $result = $this->getNameValueByI($this->position + 1, $lName);
+    $result = $this->getNVByI($this->position + 1, $lName);
     if ($name !== $lName) {
       throw new Exception('Invalid next param name: "' . $name .
         '" must be: "' . $lName . '"');
@@ -576,12 +633,13 @@ class HierarchyList {
     return $this->currList;
   }
 
-  public function getCurrList() {
-    return $this->currList;
-  }
-
   public function beginLevel($name) {
     $items = $this->currList->getNextByN($name);
+    return $this->addList($items);
+  }
+
+  public function beginLevelN(&$name) {
+    $items = $this->currList->getNextN(&$name);
     return $this->addList($items);
   }
 
@@ -593,8 +651,30 @@ class HierarchyList {
   }
 
   public function finalize() {
-    eAssert(count($this->levels) === 1, 'Exist not ended levels');
+    eAssert(count($this->levels) === 1, 'Exist not ended levels ' .
+      count($this->levels));
+
     $this->currList->finalize();
+  }
+
+  public function getCurrList() {
+    return $this->currList;
+  }
+
+  public function tryBeginLevelByN($name, &$currList = null) {
+    $result = $this->currList->existNextByN($name);
+    if ($result) {
+      $currList = $this->beginLevel($name);
+    }
+    return $result;
+  }
+
+  public function tryBeginLevelNV(&$name, &$currList) {
+    $result = $this->currList->existNext();
+    if ($result) {
+      $currList = $this->beginLevelN($name);
+    }
+    return $result;
   }
 }
 ?>
