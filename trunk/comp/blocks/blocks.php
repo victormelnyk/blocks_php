@@ -5,104 +5,25 @@
 //ComponentNameFull = AppName.LibraryName.ComponentName
 //SetBlockNameFull = AppName.SetName.BlockName
 //BlockNameFull = AppName.SetName.PageName.BlockName
-/*!*/
+/*!
 $settings = array(
-  'rootDir'    => '../../../',//!*
-  'rootRunDir' => '../../../',
+  'rootDir'    => '',//!*
+  'rootRunDir' => '',//!!
 
   'isCache'   => false,
   'isProfile' => false,
   'isTest'    => true
 );
-
-class PageSettings {
-  public $rootDir = '';
-  public $rootRunDir = '';
-
-  public $db      = null;
-  public $context = null;
-
-  public $isCache   = true;
-  public $isProfile = false;
-  public $isTest    = false;
-
-  public $onErrorFunction = '';
-  public $onTemplateErrorFunction = '';
-
-  public $defaultLanguage = 'en';
-  public $appNames = array();
-
-/*!! from set
-  public $appNames = array();
-  public $setNames = array();//!! cashe
-  public $runDirs = array();
 */
-
-  public function __construct($settings) {
-    session_start();
-
-    $settings = new LinearList($settings);
-
-    $this->rootDir = $settings->getNextByN('rootDir');
-
-    $settings->getCheckNextByN('rootRunDir', $this->rootRunDir);
-
-    $value = null;
-    if ($settings->getCheckNextOByN('isCache', $value)) {
-      $this->isCache = $value->getB();
-    }
-
-    if ($settings->getCheckNextOByN('isProfile', $value)) {
-      $this->isProfile = $value->getB();
-    }
-    if ($settings->getCheckNextOByN('isTest', $value)) {
-      $this->isTest = $value->getB();
-    }
-
-    $settings->finalize();
-  }
-
-  public function init($params, $session) {
-    if ($this->isTest) {
-      $value = null;
-      if ($params->getCheck('is_cache', $value)) {
-        $this->isCache = $value->getB();
-        $_SESSION['is_cache'] = $this->isCache;
-      } else if ($session->getCheck('is_cache', $value)) {
-        $this->isCache = $value->getB();
-      }
-
-      $value = null;
-      if ($params->getCheck('is_profile', $value)) {
-        $this->isProfile = $value->getB();
-        $_SESSION['is_profile'] = $this->isCache;
-      } else if ($session->getCheck('is_profile', $value)) {
-        $this->isProfile = $value->getB();
-      }
-
-      if ($this->isProfile) {
-        require_once($this->rootDir.'blocks/comp/helpers/profiler/.php');//!!test
-        cPFHelper::init($this->rootDir);
-      }
-    }
-
-    if ($this->onErrorFunction)
-      eAssert(function_exists($this->onErrorFunction),
-        'onErrorFunction with name: "'.$this->onErrorFunction.'" do not exsist');
-
-    if ($this->onTemplateErrorFunction)
-      eAssert(function_exists($this->onTemplateErrorFunction),
-        'onTemplateErrorFunction with name: "'.$this->onTemplateErrorFunction.
-        '" do not exsist');
-  }
-
+/*delete
   public function log($aMessage)//!!delete
   {
     $filePath = $this->rootDir.'tmp/logs/'.gmdate('YmdHis').'.log';//!! add app name
     $lData = gmdate('YmdHis').' : '.$aMessage.CRLF;
     stringToFileExt($lData, $filePath, True, 'a');
   }
-}
+
+*/
 
 class Cache {
   private $cacheDir = '';
@@ -138,27 +59,26 @@ abstract class Context {
     $this->page = $page;
   }
 
-  public function settingsReadPage(cXmlNode $aXmlNode) {}
-
-  public function settingsReadSet(cXmlNode $aXmlNode) {}
+  public function readSettings(LinearList $settings) {}
 
   public function validate() {
     return false;
   }
 }
 
-abstract class MetaData { //!FileLevels
+abstract class MetaData {
+  //!FileLevels
   const FL_PAGE     = 'p';
   const FL_BLOCK    = 'b';
   const FL_EXTERNAL = 'e';
   const FL_WEB      = 'w';//!!check
 
-  private $configs   = array();
-  private $fileDatas    = array();
+  private $configs       = array();
+  private $fileDatas     = array();
   private $filePaths     = array();
   private $filePathsList = array();
 
-  protected $settingsXmlNode = null;//!!rename
+  protected $configSettings = null;
 
   protected $scripts = null;
   protected $styles  = null;
@@ -174,13 +94,9 @@ abstract class MetaData { //!FileLevels
   public $setName = '';
   public $name    = '';
 
-  public $cache    = null;
-  public $settings = null;
-
   public $page = null;
 
-  public function __construct($appName, $setName, $name, Page $page, Cache $cache,
-    PageSettings $settings) {
+  public function __construct($appName, $setName, $name, Page $page) {
     $this->scripts       = new NamedList();
     $this->scriptsDirect = new NamedList();
     $this->styles        = new NamedList();
@@ -189,17 +105,15 @@ abstract class MetaData { //!FileLevels
     $this->tagsMl = new NamedList();
     $this->tags   = new NamedList();
 
-    $this->appName  = $appName;//!!to page level
+    $this->appName  = $appName;//!!!to page level
     $this->setName  = $setName;
     $this->name     = $name;
     $this->page     = $page;
-    $this->cache    = $cache;
-    $this->settings = $settings;
   }
 
   public function getAppDir($appName = '') {
-    return $this->settings->rootDir . ($appName ? $appName : $this->appName) .
-      '/';
+    return $this->page->rootDir . 'app/' .
+      ($appName ? $appName : $this->appName) . '/';
   }
 
   protected function checkConfig($workDir) {
@@ -330,7 +244,7 @@ abstract class MetaData { //!FileLevels
 
     if ($config->tryBeginLevelByN('settings', $settings)) {
       if ($settings->count()) {
-        $this->settingsXmlNode = $settings;//!! to list
+        $this->configSettings = new LinearList($settings);
       }
 
       $config->endLevel('settings');
@@ -339,7 +253,7 @@ abstract class MetaData { //!FileLevels
 
   private function getFileData($filePath, $isAddToCache = true,
     array $tagsValues = array()) {
-    if ($this->cache->isValid) {
+    if ($this->page->cache->isValid) {
       return $this->fileDatas[$filePath];
     }
     $result = fileToString($filePath);
@@ -395,7 +309,7 @@ abstract class MetaData { //!FileLevels
 
   private function getCheckFirstExistFilePathInternal($relativeFilePath,
     &$filePath) {
-    if ($this->cache->isValid) {
+    if ($this->page->cache->isValid) {
       if (isset($this->filePaths[$relativeFilePath])) {
         $filePath = $this->filePaths[$relativeFilePath];
         return true;
@@ -462,10 +376,8 @@ abstract class MetaData { //!FileLevels
     $this->tagsMl->loadFromString($cacheData['tagsMl']);
     $this->tags->loadFromString($cacheData['tags']);
 
-    if (isset($cacheData['settingsXml']))
-    {
-      $this->settingsXmlNode = new cXmlDocument();
-      $this->settingsXmlNode->loadFromString($cacheData['settingsXml']);
+    if (isset($cacheData['configSettings'])) {
+      $this->configSettings = new LinearList($cacheData['configSettings']);
     }
   }
 
@@ -537,15 +449,15 @@ abstract class MetaData { //!FileLevels
   }
 
   public function saveToCache(array &$cacheData) {//!! not updated
-    $cacheData['fileDatas']    = $this->fileDatas;
+    $cacheData['fileDatas']     = $this->fileDatas;
     $cacheData['filePaths']     = $this->filePaths;
     $cacheData['filePathsList'] = $this->filePathsList;
-    $cacheData['initScript']   = $this->initScript;
-    $cacheData['tagsMl'] = $this->tagsMl->saveToString();
-    $cacheData['tags'] = $this->tags->saveToString();
+    $cacheData['initScript']    = $this->initScript;
+    $cacheData['tagsMl']        = $this->tagsMl->saveToString();
+    $cacheData['tags']          = $this->tags->saveToString();
 
-    if ($this->settingsXmlNode)
-      $cacheData['settingsXml'] = $this->settingsXmlNode->saveToString();
+    if ($this->configSettings)
+      $cacheData['configSettings'] = $this->configSettings->getItems();
   }
 
   private function getResources(NamedList $sources, NamedList $destinations,
@@ -559,13 +471,13 @@ abstract class MetaData { //!FileLevels
     }
   }
 
-  protected function readSettings(cXmlNode $aXmlNode) {}//!to override
+  protected function readSettings(LinearList $configSettings) {}//!to override
 
-  protected function readProcessSettings() {//!!update
-    if (isset($this->settingsXmlNode)) {
-      $this->readSettings($this->settingsXmlNode);
+  protected function readProcessSettings() {
+    if (isset($this->configSettings)) {
+      $this->readSettings($this->configSettings);
       if (!$this->cache->isValid) {
-        $this->settingsXmlNode->allReadAsser();
+        $this->configSettings->finalize();
       }
     }
   }
@@ -658,55 +570,117 @@ abstract class MetaData { //!FileLevels
 
 class Page extends MetaData {
   private static $modules = array();
-  private static $settingsInstance = null;
+  private static $initSettings = null;
+  private static $rootDirStatic = '';
 
   private $appNames    = array();
   private $setNames    = array();
   private $blocksAll   = null;
   private $blocksInfos = array();//!!array of record
 
-  public $title = '';
-  public $meta = '';
+  public $isCache   = true;
+  public $isProfile = false;
+  public $isTest    = false;
 
-  public $language = '';
+  public $rootDir = '';
+  public $rootRunDir = '';
 
   public $blocks = array();
   public $params = null;
   public $session = null;
 
+  public $title = '';
+  public $meta = '';
+
+  public $defaultLanguage = 'en';
+  public $language = '';
+
+  public $db      = null;
+  public $context = null;
+
+  public $onErrorFunction = '';//!!delete
+  public $onTemplateErrorFunction = '';
+
   public function __construct($setNameFull) {
+    session_start();
+
+    $this->params = new NamedList(
+      $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : $_GET);
+    $this->session = new NamedList($_SESSION);
+
+    $this->rootDir = self::$rootDirStatic;
+
+    $value = null;
+    if (self::$initSettings->getCheckNextOByN('isCache', $value)) {
+      $this->isCache = $value->getB();
+    }
+
+    if (self::$initSettings->getCheckNextOByN('isProfile', $value)) {
+      $this->isProfile = $value->getB();
+    }
+    if (self::$initSettings->getCheckNextOByN('isTest', $value)) {
+      $this->isTest = $value->getB();
+    }
+    //!!defaultLanguage
+/*!!
+    if ($this->onErrorFunction)//!!delete
+      eAssert(function_exists($this->onErrorFunction),
+        'onErrorFunction with name: "'.$this->onErrorFunction.'" do not exsist');
+
+    if ($this->onTemplateErrorFunction)
+      eAssert(function_exists($this->onTemplateErrorFunction),
+        'onTemplateErrorFunction with name: "'.$this->onTemplateErrorFunction.
+        '" do not exsist');
+*/
+    self::$initSettings->finalize();
+
+    if ($this->isTest) {
+      if ($this->params->getCheck('is_cache', $value)) {
+        $this->isCache = $value->getB();
+        $_SESSION['is_cache'] = $this->isCache;
+      } else if ($this->session->getCheck('is_cache', $value)) {
+        $this->isCache = $value->getB();
+      }
+
+      if ($this->params->getCheck('is_profile', $value)) {
+        $this->isProfile = $value->getB();
+        $_SESSION['is_profile'] = $this->isCache;
+      } else if ($this->session->getCheck('is_profile', $value)) {
+        $this->isProfile = $value->getB();
+      }
+
+      if ($this->isProfile) {
+        require_once($this->rootDir.'blocks/comp/helpers/profiler/.php');//!!fix
+        cPFHelper::init($this->rootDir);
+      }
+    }
+
+    //
     $names = $this->explodeFullName($setNameFull, 2);
     $appName = $names[0];
     $setName = $names[1];
     $pageName = basename($_SERVER['SCRIPT_NAME'], '.php');
 
-    $this->params = new NamedList($_SERVER['REQUEST_METHOD'] === 'POST'
-      ? $_POST : $_GET);
-    $this->session = new NamedList($_SESSION);
-
-    $settings = self::getSettings();
-    $settings->init($this->params, $this->session);
-
     if ($this->params->getCheck('l', $this->language)) {
       $_SESSION['language'] = $this->language;
     } else if (!$this->session->getCheck('language', $this->language)) {
-      $this->language = $settings->defaultLanguage;
+      $this->language = $this->defaultLanguage;
     }
 
-    $cache = new Cache($settings->rootDir . $appName . '/tmp/cache/' .
+    $this->cache = new Cache($this->rootDir . 'tmp/cache/' .
       $setName . '/' . $pageName . '/' .
       ($this->language ? $this->language . '/' : ''),
-      $settings->isCache);
+      $this->isCache);
 
-    parent::__construct($appName, $setName, $pageName, $this, $cache, $settings);
+    parent::__construct($appName, $setName, $pageName, $this);
 
     $this->blocksAll = new NamedList();
 
-    if ($this->settings->context) {
-      $this->settings->context->init($this);
+    if ($this->context) {
+      $this->context->init($this);
     }
 
-    $this->appNames = array_merge(array($appName), $settings->appNames,
+    $this->appNames = array_merge(array($appName), $this->appNames,
       array('blocks'));
     $this->setNames[] = $setName;
 
@@ -720,8 +694,8 @@ class Page extends MetaData {
     $libraryName   = $names[1];
     $componentName = $names[2];
 
-    $moduleFilePath = $appName . '/lib/' . $libraryName . '/' . $componentName .
-      '/.php';
+    $moduleFilePath = 'app/' . $appName . '/lib/' . $libraryName . '/' .
+      $componentName . '/.php';
 
     $this->addModule($moduleFilePath);
 
@@ -947,13 +921,13 @@ class Page extends MetaData {
   public static function run($setNameFull) {
 //!!    try
 //    {
-      $className = get_called_class();
-      $page = new $className($setNameFull);
-      $page->process();
+    $className = get_called_class();
+    $page = new $className($setNameFull);
+    $page->process();
 /*!!    }
     catch (Exception $e)
     {
-      $function = self::getSettings()->onErrorFunction;
+      $function = self::initSettings->onErrorFunction;
       if ($function)
         p($function($e));
       else
@@ -961,13 +935,13 @@ class Page extends MetaData {
     }*/
   }
 
-  protected function loadFromCache(array $cacheData) {//!!check
+  protected function loadFromCache(array $cacheData) {
     parent::loadFromCache($cacheData);
     $this->blocksInfos = $cacheData['blocksInfos'];
   }
 
   public static function addModule($relativeFilePath) {
-    self::addModuleDirect(self::getSettings()->rootDir . $relativeFilePath);
+    self::addModuleDirect(self::$rootDirStatic . $relativeFilePath);
   }
 
   public static function addModuleDirect($filePath) {
@@ -979,22 +953,22 @@ class Page extends MetaData {
     }
   }
 
-  public function process() {
-    if ($this->settings->context && !$this->settings->context->validate()) {
+  private function process() {
+    if ($this->context && !$this->context->validate()) {
       return;
     }
 
     if (false && paramPostGetGetCheck('blocks', V_STRING, $lParam)) {//!! params, delete false &&
       $result = $this->buildByBlockNames(explode(',', $lParam));
     } else {
-      if ($this->settings->isTest) {
+      if ($this->isTest) {
         $this->addInitScript('if (window.page) page.isTestMode = true;');
       }
 
       $result = $this->build();
     }
 
-    if ($this->settings->isProfile) {
+    if ($this->isProfile) {
       cPFHelper::stop();
     }
 
@@ -1021,20 +995,16 @@ class Page extends MetaData {
     $cacheData['blocksInfos'] = $this->blocksInfos;
   }
 
-  public static function createSettings(array $settings) {
-    self::$settingsInstance = new PageSettings($settings);
+  public static function init(array $settings) {
+    self::$initSettings = new LinearList($settings);
+    self::$rootDirStatic = self::$initSettings->getNextByN('rootDir');
   }
 
-  public static function getSettings() {
-    eAssert(isset(self::$settingsInstance), 'Page settings not created');
-    return self::$settingsInstance;
-  }
-
-  protected function readSettings(cXmlNode $aXmlNode) {//!!update
-    parent::readSettings($aXmlNode);
+  protected function readSettings(LinearList $configSettings) {
+    parent::readSettings($configSettings);
 
     if ($this->settings->context) {
-      $this->settings->context->settingsReadPage($aXmlNode);
+      $this->settings->context->readSettings($configSettings);
     }
   }
 
@@ -1089,8 +1059,7 @@ abstract class Block extends MetaData {
   public $isBuildOnRequest = false;
 
   public function __construct($blockName, $componentNameFull, Page $page) {
-    parent::__construct($page->appName, $page->setName, $blockName, $page, $page->cache,
-      $page->settings);
+    parent::__construct($page->appName, $page->setName, $blockName, $page);
 
     $this->initMt($componentNameFull);
   }
@@ -1139,8 +1108,8 @@ abstract class Block extends MetaData {
   }
 
   private function initMt($componentNameFull) {
-    if ($this->cache->isValid) {
-      $this->loadFromCache($this->cache->data['blocks'][$this->name]);
+    if ($this->page->cache->isValid) {
+      $this->loadFromCache($this->page->cache->data['blocks'][$this->name]);
     } else {
       $this->initMtInternal(
         $componentNameFull,
