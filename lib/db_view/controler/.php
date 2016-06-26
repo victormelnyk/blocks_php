@@ -707,8 +707,8 @@ class cLimit extends cOptionsBase
 
 class Blocks_DbView_Controler extends Blocks_Sys_NamedList
 {
-  private $sql       = '';
-  private $sqlParams = array();
+  protected $sql       = '';
+  protected $sqlParams = array();
 
   //! PP - PostProcess
   public $recordPPFuncs    = array();
@@ -721,8 +721,8 @@ class Blocks_DbView_Controler extends Blocks_Sys_NamedList
   public $limit  = null;
   public $order  = null;
 
-  private $isRecordCountRead = false;
-  private $recordCount       = 0;
+  protected $isRecordCountRead = false;
+  protected $recordCount       = 0;
 
   public $recordset = array();
 
@@ -759,7 +759,7 @@ class Blocks_DbView_Controler extends Blocks_Sys_NamedList
         'order' => $this->order->sqlGet(),
         'limit' => $this->limit->sqlGet())
     );
-
+    //!!!var_dump($this->sql);
     $this->filter->loadValueFromDb($this->settings->db);
 
     if ($this->filter->isEmpty)
