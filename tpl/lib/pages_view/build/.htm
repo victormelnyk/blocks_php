@@ -1,11 +1,11 @@
 <?
-for ($i = 0, $l = count($recordset); $i < $l; $i++)
+for ($i = 0; $i < count($recordset); $i++)
 {
-  $lRecord = $recordset[$i];
+  $record = $recordset[$i];
 
-  p('<div><a href="'.$lRecord['url'].'">'.$lRecord['name'].'</a>'.
-    ($lRecord['description'] ? ' - '.$lRecord['description'] : '').'<br/>'.
-    '<iframe src="/'.$lRecord['url'].'" style="width: '.$lRecord['width'].
-    '; height: '.$lRecord['height'].'; max-height: 300px"></iframe></div><br/>');
+  p('<div><a href="' . $record['url'] . '">' . $record['name'] . '</a>' .
+    ($record['description'] ? ' - ' . $record['description'] : '') . '<br/>' .
+    '<iframe src="' .  $record['url'] . '" style="width: ' . $record['width'] .
+    '; height: ' . $record['height'] . '; max-height: 300px"></iframe></div><br/>');
 }
 ?>

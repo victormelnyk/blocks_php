@@ -11,7 +11,7 @@ abstract class Blocks_Auth_PasswordRestore extends Block
   {
     if (!$this->cache->isValid)//!for cache
       $this->getFirstExistFileData('report.htm');
-    return $this->templateProcess($this->getFirstExistFileData('.htm'),
+    return $this->processTemplate($this->getFirstExistFileData('.htm'),
       array(
         'status'    => $this->status,
         'errorType' => $this->errorType
@@ -78,7 +78,7 @@ abstract class Blocks_Auth_PasswordRestore extends Block
     {
       $this->passwordUpdate($aUserId, $lParams);
 
-      $this->mailSend($aEmail, $lPasswordNew, $this->templateProcess(
+      $this->mailSend($aEmail, $lPasswordNew, $this->processTemplate(
         $this->getFirstExistFileData('report.htm'),
         array('passwordNew' => $lPasswordNew)));
 

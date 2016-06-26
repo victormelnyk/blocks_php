@@ -9,7 +9,7 @@ class Blocks_Effects_MenuStatic extends Block
 
   public function build()
   {
-    return $this->templateProcess($this->getFirstExistFileData('.htm'),
+    return $this->processTemplate($this->getFirstExistFileData('.htm'),
       array('recordset' => $this->recordset));
   }
 

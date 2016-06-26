@@ -3,7 +3,7 @@ abstract class Blocks_Auth_Login extends Block
 {
   public function build()
   {
-    return $this->templateProcess($this->getFirstExistFileData('.htm'),
+    return $this->processTemplate($this->getFirstExistFileData('.htm'),
        $this->settings->context->toArray());
   }
 

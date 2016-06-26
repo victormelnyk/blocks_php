@@ -1,66 +1,72 @@
 <?
-class Blocks_PagesView_Build extends Block
-{
+class Blocks_PagesView_Build extends Block {
   private $recordset = array();
 
-  public function build()
-  {
-    return $this->templateProcess($this->getFirstExistFileData('.htm'), array(
+  public function build() {
+    return $this->processTemplate($this->getFirstExistFileData('.htm'), array(
       'recordset' => $this->recordset
     ));
   }
 
-  protected function readSettings(cXmlNode $aXmlNode)
+  protected function readSettings(HierarchyList $settings)
   {
-    parent::readSettings($aXmlNode);
+    parent::readSettings($settings);
 
-    $lPagesNode = $aXmlNode->nodes->getNextByN('Pages');
-    while ($lPagesNode->nodes->getCheckNext($lPageNode))
-    {
-      $lNames = $this->explodeFullName($lPageNode->name, 2);
+    $pages = $settings->getCurrList()->getNextByN('pages');
 
-      $lRunDirName = $lNames[0];
-      $lPageName   = $lNames[1];
+    for ($i = 0; $i < count($pages); $i++) {
+      $page = new LinearList($pages[$i]);
 
-      $lAttr = null;
+      $pathParts = $this->explodeFullName($page->getNextByN('path'), 2);
 
-      if ($lPageNode->attrs->getCheckNextByN('Name', $lAttr))
-        $lName = $lAttr->getS();
-      else
-        $lName = '';
+      $runDir = $pathParts[0];
+      $pageName = $pathParts[1];
 
-      if ($lPageNode->attrs->getCheckNextByN('Description', $lAttr))
-        $lDescription = $lAttr->getS();
-      else
-        $lDescription = '';
+      $value = null;
 
-      if ($lPageNode->attrs->getCheckNextByN('Params', $lAttr))
-        $lParams = $lAttr->getS();
-      else
+      if ($page->getCheckNextOByN('name', $value)) {
+        $name = $value->getS();
+      } else {
+        $name = '';
+      }
+
+      if ($page->getCheckNextOByN('description', $value)) {
+        $description = $value->getS();
+      } else {
+        $description = '';
+      }
+
+      if ($page->getCheckNextOByN('params', $value)) {
+        $lParams = $value->getS();
+      } else {
         $lParams = '';
+      }
 
-      if ($lPageNode->attrs->getCheckNextByN('Width', $lAttr))
-        $lWidth = $lAttr->getS();
-      else
-        $lWidth = '100%';
+      if ($page->getCheckNextOByN('width', $value)) {
+        $width = $value->getS();
+      } else {
+        $width = '100%';
+      }
 
-     if ($lPageNode->attrs->getCheckNextByN('Height', $lAttr))
-        $lHeight = $lAttr->getS();
-      else
-        $lHeight = '200px';
+     if ($page->getCheckNextOByN('height', $value)) {
+        $height = $value->getS();
+      } else {
+        $height = '200px';
+      }
 
-      $lUrl = $this->page->getRunDir($lRunDirName).$lPageName.'.php'.
-        ($lParams ? '?'.$lParams : '');
+      $url = $this->page->getRunDir($runDir) . $pageName . '.php' .
+        ($lParams ? '?' . $lParams : '');
 
-      if (!$lName)
-        $lName = $lUrl;
+      if (!$name) {
+        $name = $url;
+      }
 
       $this->recordset[] = array(
-        'url'         => $lUrl,
-        'name'        => $lName,
-        'description' => $lDescription,
-        'width'       => $lWidth,
-        'height'      => $lHeight
+        'url'         => $url,
+        'name'        => $name,
+        'description' => $description,
+        'width'       => $width,
+        'height'      => $height
       );
     }
   }

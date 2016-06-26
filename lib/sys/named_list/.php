@@ -11,7 +11,7 @@ class Blocks_Sys_NamedList extends Block
       $lValues[$lBlock->name] = $lBlock->getContent();
     }
 
-    return $this->templateProcess($this->getFirstExistFileData('.htm'),
+    return $this->processTemplate($this->getFirstExistFileData('.htm'),
       $lValues);
   }
 }

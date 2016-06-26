@@ -15,7 +15,7 @@ class Blocks_DbView_Limit extends Block
     }
 
     $lLimit = $this->owner->limit;
-    return $this->templateProcess($this->getFirstExistFileData('.htm'), array(
+    return $this->processTemplate($this->getFirstExistFileData('.htm'), array(
       'paramName'          => $lLimit->paramName,
       'pageNoParamName'    => $lLimit->pageNoParamName,
       'options'            => $lLimit->asArrayGet(),

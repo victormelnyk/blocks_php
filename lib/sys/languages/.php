@@ -6,7 +6,7 @@ class Blocks_Sys_Languages extends Block
 
   public function build()
   {
-    return $this->templateProcess($this->getFirstExistFileData('.htm'),
+    return $this->processTemplate($this->getFirstExistFileData('.htm'),
       array('languages' => $this->languagesEx));
   }
 

@@ -13,7 +13,7 @@ class Blocks_DbView_Order extends Block
     }
 
     $lOrder = $this->owner->order;
-    return $this->templateProcess($this->getFirstExistFileData('.htm'), array(
+    return $this->processTemplate($this->getFirstExistFileData('.htm'), array(
       'paramName'          => $lOrder->paramName,
       'directionParamName' => $lOrder->directionParamName,
       'options'            => $lOrder->asArrayGet(),

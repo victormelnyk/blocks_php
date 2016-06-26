@@ -59,7 +59,7 @@ abstract class Context {
     $this->page = $page;
   }
 
-  public function readSettings(LinearList $settings) {}
+  public function readSettings(HierarchyList $settings) {}
 
   public function validate() {
     return false;
@@ -78,7 +78,7 @@ abstract class MetaData {
   private $filePaths     = array();
   private $filePathsList = array();
 
-  protected $configSettings = null;
+  protected $settings = null;
 
   protected $scripts = null;
   protected $styles  = null;
@@ -242,12 +242,10 @@ abstract class MetaData {
 
     $configList->getCheckNextByN('initScripts', $this->initScript);
 
-    if ($config->tryBeginLevelByN('settings', $settings)) {
-      if ($settings->count()) {
-        $this->configSettings = new LinearList($settings);
+    if ($configList->getCheckNextByN('settings', $settings)) {
+      if (count($settings)) {
+        $this->settings = new HierarchyList($settings);
       }
-
-      $config->endLevel('settings');
     }
   }
 
@@ -328,7 +326,7 @@ abstract class MetaData {
           $fileName . '_' . $this->page->language;
         $relativeFilePaths[] = implode('.', $filePathParts);
         $filePathParts[$filePathPartCount - 1 - 1] =
-          $fileName . '_' .$this->page->settings->defaultLanguage;
+          $fileName . '_' .$this->page->defaultLanguage;
         $relativeFilePaths[] = implode('.', $filePathParts);
       }
 
@@ -376,8 +374,8 @@ abstract class MetaData {
     $this->tagsMl->loadFromString($cacheData['tagsMl']);
     $this->tags->loadFromString($cacheData['tags']);
 
-    if (isset($cacheData['configSettings'])) {
-      $this->configSettings = new LinearList($cacheData['configSettings']);
+    if (isset($cacheData['settings'])) {
+      $this->settings = new HierarchyList($cacheData['settings']);
     }
   }
 
@@ -393,7 +391,7 @@ abstract class MetaData {
     if ($this->getCheckMlTagValue($tagName, $this->page->language, $value)) {
       return $value;
     } else if ($this->getCheckMlTagValue($tagName,
-      $this->page->settings->defaultLanguage, $value)) {
+      $this->page->defaultLanguage, $value)) {
       return $value;
     } else {
       throw new Exception('Can not get LocalizationTagValue for Tag: "' .
@@ -420,34 +418,6 @@ abstract class MetaData {
     return $result;
   }
 
-  public function getRunDir($runDir) {//!! check host
-    $params = explode('.', $runDir);//!!'.' wrong delimiter
-    $isAbsolute = false;
-
-    switch (count($params)) {
-      case 1:
-        $runDirName = $params[0];
-        break;
-      case 2:
-        $runDirName = $params[0];
-        eAssert($params[1] === 'host', 'Not supported param ' . $params[1]);
-        $isAbsolute = true;
-        break;
-      default:
-        throw new Exception('Wrong RunDirName: "'.$runDir.'"');
-    }
-
-    $result = $this->settings->rootDir .
-      ($runDirName ? $this->settings->rootRunDir .
-        (isset($this->page->set->runDirs[$runDirName])
-          ? $this->page->set->runDirs[$runDirName] : $runDirName . '/') : '');
-
-    if ($isAbsolute)
-      $result = $this->addHostUrl($result, true);
-
-    return $result;
-  }
-
   public function saveToCache(array &$cacheData) {//!! not updated
     $cacheData['fileDatas']     = $this->fileDatas;
     $cacheData['filePaths']     = $this->filePaths;
@@ -456,8 +426,8 @@ abstract class MetaData {
     $cacheData['tagsMl']        = $this->tagsMl->saveToString();
     $cacheData['tags']          = $this->tags->saveToString();
 
-    if ($this->configSettings)
-      $cacheData['configSettings'] = $this->configSettings->getItems();
+    if ($this->settings)
+      $cacheData['settings'] = $this->settings->getCurrList()->getItems();
   }
 
   private function getResources(NamedList $sources, NamedList $destinations,
@@ -471,13 +441,13 @@ abstract class MetaData {
     }
   }
 
-  protected function readSettings(LinearList $configSettings) {}//!to override
+  protected function readSettings(HierarchyList $settings) {}//!to override
 
   protected function readProcessSettings() {
-    if (isset($this->configSettings)) {
-      $this->readSettings($this->configSettings);
-      if (!$this->cache->isValid) {
-        $this->configSettings->finalize();
+    if (isset($this->settings)) {
+      $this->readSettings($this->settings);
+      if (!$this->page->cache->isValid) {
+        $this->settings->finalize();
       }
     }
   }
@@ -526,7 +496,7 @@ abstract class MetaData {
                 $lTagsValues[$tag] = $this->getWorkDirByLevel($tagParam);
                 break;
               case 'getRunDir':
-                $lTagsValues[$tag] = $this->getRunDir($tagParam);
+                $lTagsValues[$tag] = $this->page->getRunDir($tagParam);
                 break;
               case 'ml':
                 $lTagsValues[$tag] = $this->getMlTagValue($tagParam);
@@ -553,7 +523,7 @@ abstract class MetaData {
     return $result;
   }
 
-  public function addHostUrl($url, $isAddSlash) {
+  protected function addHostUrl($url, $isAddSlash) {
     return $_SERVER['HTTP_HOST'].($isAddSlash ? '/' : '').
       str_replace('../', '', $url);
   }
@@ -655,7 +625,6 @@ class Page extends MetaData {
       }
     }
 
-    //
     $names = $this->explodeFullName($setNameFull, 2);
     $appName = $names[0];
     $setName = $names[1];
@@ -748,7 +717,7 @@ class Page extends MetaData {
       $this->saveAllToCache();
     }
 
-    return $this->templateProcess($result, array(
+    return $this->processTemplate($result, array(
       'body'   => $body,
       'initJs' => $this->buildInitScripts()
     ));
@@ -841,6 +810,35 @@ class Page extends MetaData {
     throw new Exception('ExternalFile not exist by RelativePath: "' .
       $relativePath . '"AppNames: "' . implode(', ', $this->appNames) . '"');
   }
+
+  public function getRunDir($runDir) {//!! check host
+    $params = explode('.', $runDir);//!!'.' wrong delimiter
+    $isAbsolute = false;
+
+    switch (count($params)) {
+      case 1:
+        $runDirName = $params[0];
+        break;
+      case 2:
+        $runDirName = $params[0];
+        eAssert($params[1] === 'host', 'Not supported param ' . $params[1]);
+        $isAbsolute = true;
+        break;
+      default:
+        throw new Exception('Wrong RunDirName: "'.$runDir.'"');
+    }
+
+    $result = $this->rootDir .
+      ($runDirName ? $this->rootRunDir .
+        (isset($this->runDirs[$runDirName])
+          ? $this->runDirs[$runDirName] : $runDirName . '/') : '');
+
+    if ($isAbsolute)
+      $result = $this->addHostUrl($result, true);
+
+    return $result;
+  }
+
 
   protected function readConfigInternal(HierarchyList $config) {
     parent::readConfigInternal($config);
@@ -1000,15 +998,15 @@ class Page extends MetaData {
     self::$rootDirStatic = self::$initSettings->getNextByN('rootDir');
   }
 
-  protected function readSettings(LinearList $configSettings) {
-    parent::readSettings($configSettings);
+  protected function readSettings(HierarchyList $settings) {
+    parent::readSettings($settings);
 
-    if ($this->settings->context) {
-      $this->settings->context->readSettings($configSettings);
+    if ($this->context) {
+      $this->context->readSettings($settings);
     }
   }
 
-  public function templateProcess($template, $valuesArray) {
+  public function processTemplate($template, $valuesArray) {
     try {
       $valuesArray['v'] = $valuesArray;
       extract($valuesArray, EXTR_SKIP);
@@ -1018,7 +1016,7 @@ class Page extends MetaData {
     } catch (Exception $e) {
       ob_get_clean();
 
-      $function = $this->settings->onTemplateErrorFunction;//!!check
+      $function = $this->onTemplateErrorFunction;//!!check
       if ($function) {
         return $function($e);
       } else {
@@ -1065,14 +1063,14 @@ abstract class Block extends MetaData {
   }
 
   protected function readConfigInternal(HierarchyList $config) {
-    parent::readConfigInternal($aXmlDocument);
+    parent::readConfigInternal($config);
     $configList = $config->getCurrList();
 
     $configObject = null;
-    if ($aXmlDocument->getCheckNextOByN('isCache', $configObject)) {
+    if ($configList->getCheckNextOByN('isCache', $configObject)) {
       $this->isCache = $configObject->getB();
     }
-    if ($aXmlDocument->getCheckNextByN('isBuildOnRequest', $configObject)) {
+    if ($configList->getCheckNextByN('isBuildOnRequest', $configObject)) {
       $this->isBuildOnRequest = $configObject->getB();
     }
   }
@@ -1235,8 +1233,8 @@ abstract class Block extends MetaData {
     }
   }
 
-  protected function templateProcess($template, $valuesArray) {
-    return $this->page->templateProcess($template, $valuesArray);
+  protected function processTemplate($template, $valuesArray) {
+    return $this->page->processTemplate($template, $valuesArray);
   }
 
   public function getWorkDirByLevel($levelName) {

@@ -8,7 +8,7 @@ abstract class Blocks_Auth_PasswordChange extends Block
 
   public function build()
   {
-    return $this->templateProcess($this->getFirstExistFileData('.htm'),
+    return $this->processTemplate($this->getFirstExistFileData('.htm'),
       array('status' => $this->status, 'errorType' => $this->errorType));
   }
 

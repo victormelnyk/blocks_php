@@ -240,7 +240,7 @@ class Blocks_EditForm_DbForm extends Blocks_EditForm_Form
   public function build()
   {
     $lForm = $this->form;
-    return $this->templateProcess($this->getFirstExistFileData('.htm'), array(
+    return $this->processTemplate($this->getFirstExistFileData('.htm'), array(
       'editMode'    => $lForm->editMode,
       'callbackUrl' => $lForm->callbackUrl,
       'options'     => $lForm->asArrayGet()
